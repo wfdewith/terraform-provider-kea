@@ -9,15 +9,13 @@ import (
 )
 
 func TestAccReservationDataSource_basic(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:3c:f1:86:a4:2e"
 	ip := "10.67.0.19"
 	resourceName := "data.kea_dhcp4_reservation.test"
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationDataSourceConfig_basic(1, mac, ip),
@@ -32,16 +30,14 @@ func TestAccReservationDataSource_basic(t *testing.T) {
 }
 
 func TestAccReservationDataSource_withHostname(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:b9:47:d2:6f:91"
 	ip := "10.67.0.128"
 	hostname := fmt.Sprintf("test-host-%s", mac[12:])
 	resourceName := "data.kea_dhcp4_reservation.test"
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationDataSourceConfig_withHostname(1, mac, ip, hostname),
@@ -56,15 +52,13 @@ func TestAccReservationDataSource_withHostname(t *testing.T) {
 }
 
 func TestAccReservationDataSource_global(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:7e:93:15:cb:a8"
 	ip := "192.168.67.88"
 	resourceName := "data.kea_dhcp4_reservation.test"
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationDataSourceConfig_global(mac, ip),

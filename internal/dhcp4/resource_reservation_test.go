@@ -8,102 +8,126 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/wfdewith/terraform-provider-kea/internal/acctest"
 	"github.com/wfdewith/terraform-provider-kea/kea"
 )
 
 func TestAccReservation_basic(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:a3:7b:4e:91:22"
 	ip := "10.67.0.42"
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_basic(1, mac, ip),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
 					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 		},
 	})
 }
 
 func TestAccReservation_withHostname(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:f8:c2:5d:19:a6"
 	ip := "10.67.0.142"
 	hostname := fmt.Sprintf("test-host-%d", rand.Intn(10000))
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_withHostname(1, mac, ip, hostname),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
 					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 					resource.TestCheckResourceAttr(resourceName, "hostname", hostname),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 		},
 	})
 }
 
 func TestAccReservation_withOptionData(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:6b:d9:31:84:cf"
 	ip := "10.67.0.27"
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_withOptionData(1, mac, ip),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
 					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 					resource.TestCheckResourceAttr(resourceName, "option_data.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "option_data.0.name", "domain-name-servers"),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
+			},
+		},
+	})
+}
+
+func TestAccReservation_destroy(t *testing.T) {
+	mac := "02:9a:3f:6c:d1:84"
+	ip := "10.67.0.201"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationConfig_basic(1, mac, ip),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("kea_dhcp4_reservation.test", "hw_address", mac),
+				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
+			},
+			{
+				Config:        acctest.ProviderConfig(),
+				PostApplyFunc: testAccCheckReservationDestroyed(t, query),
 			},
 		},
 	})
 }
 
 func TestAccReservation_disappears(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:1c:8e:a7:f2:3d"
 	ip := "10.67.0.177"
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_basic(1, mac, ip),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
-					testAccCheckReservationDisappears(resourceName, mac),
+					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 				),
+				PostApplyFunc: testAccDeleteReservation(t, query),
+			},
+			{
+				RefreshState:       true,
 				ExpectNonEmptyPlan: true,
 			},
 		},
@@ -111,85 +135,109 @@ func TestAccReservation_disappears(t *testing.T) {
 }
 
 func TestAccReservation_global(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:95:4a:62:b8:e1"
 	ip := "192.168.67.143"
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(0, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_global(mac, ip),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "subnet_id", "0"),
 					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
 					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 		},
 	})
 }
 
 func TestAccReservation_update(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:d4:71:39:ac:56"
 	ip := "10.67.0.91"
 	hostname1 := fmt.Sprintf("test-host-%d", rand.Intn(10000))
 	hostname2 := fmt.Sprintf("test-host-%d", rand.Intn(10000))
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_withHostname(1, mac, ip, hostname1),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "hostname", hostname1),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 			{
 				Config: testAccReservationConfig_withHostname(1, mac, ip, hostname2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "hostname", hostname2),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 		},
 	})
 }
 
 func TestAccReservation_reorderSetsNoUpdate(t *testing.T) {
-	acctest.PreCheck(t)
-
 	mac := "02:e7:2f:58:c3:9b"
 	ip := "10.67.0.165"
 	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccReservationConfig_withClientClassesAndOptions(1, mac, ip),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
 					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 					resource.TestCheckResourceAttr(resourceName, "client_classes.#", "3"),
 					resource.TestCheckResourceAttr(resourceName, "option_data.#", "3"),
 				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 			{
-				Config:   testAccReservationConfig_withClientClassesAndOptionsReordered(1, mac, ip),
-				PlanOnly: true,
+				Config: testAccReservationConfig_withClientClassesAndOptionsReordered(1, mac, ip),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccReservation_withUserContext(t *testing.T) {
+	mac := "02:5a:b6:4d:e9:72"
+	ip := "10.67.0.64"
+	resourceName := "kea_dhcp4_reservation.test"
+	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationConfig_withUserContext(1, mac, ip),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
+					resource.TestCheckResourceAttrSet(resourceName, "user_context"),
+				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
 			},
 		},
 	})
@@ -204,64 +252,42 @@ func testAccKeaClient() *kea.DHCP4Client {
 	return kea.NewDHCP4Client(transport)
 }
 
-func testAccCheckReservationExists(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
+func testAccCheckReservationExists(t *testing.T, query kea.ReservationQuery) func() {
+	return func() {
+		client := testAccKeaClient()
+
+		reservation, err := client.GetReservation(context.Background(), query)
+		if err != nil {
+			t.Fatalf("failed to get reservation: %v", err)
 		}
 
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("resource ID is not set")
+		if reservation == nil {
+			t.Fatal("reservation does not exist in Kea")
 		}
-
-		return nil
 	}
 }
 
-func testAccCheckReservationDestroy(s *terraform.State) error {
-	client := testAccKeaClient()
+func testAccCheckReservationDestroyed(t *testing.T, query kea.ReservationQuery) func() {
+	return func() {
+		client := testAccKeaClient()
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "kea_dhcp4_reservation" {
-			continue
-		}
-
-		hwAddress := rs.Primary.Attributes["hw_address"]
-		subnetIDStr := rs.Primary.Attributes["subnet_id"]
-		subnetID := uint32(0)
-		if subnetIDStr != "" {
-			var parsed int
-			fmt.Sscanf(subnetIDStr, "%d", &parsed)
-			subnetID = uint32(parsed)
-		}
-
-		reservation, err := client.GetReservation(context.Background(), kea.QueryReservationByIdentifier(subnetID, "hw-address", hwAddress))
+		reservation, err := client.GetReservation(context.Background(), query)
 		if err != nil {
-			return err
+			t.Fatalf("failed to check reservation: %v", err)
 		}
 
 		if reservation != nil {
-			return fmt.Errorf("reservation %s still exists", rs.Primary.ID)
+			t.Fatal("reservation still exists")
 		}
 	}
-
-	return nil
 }
 
-func testAccCheckReservationDisappears(resourceName string, mac string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("resource ID is not set")
-		}
-
+func testAccDeleteReservation(t *testing.T, query kea.ReservationQuery) func() {
+	return func() {
 		client := testAccKeaClient()
-		return client.DeleteReservation(context.Background(), kea.QueryReservationByIdentifier(1, "hw-address", mac))
+		if err := client.DeleteReservation(context.Background(), query); err != nil {
+			t.Fatalf("failed to delete reservation: %v", err)
+		}
 	}
 }
 
@@ -374,30 +400,6 @@ resource "kea_dhcp4_reservation" "test" {
   }
 }
 `, acctest.ProviderConfig(), subnetID, mac, ip)
-}
-
-func TestAccReservation_withUserContext(t *testing.T) {
-	acctest.PreCheck(t)
-
-	mac := "02:5a:b6:4d:e9:72"
-	ip := "10.67.0.64"
-	resourceName := "kea_dhcp4_reservation.test"
-
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckReservationDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccReservationConfig_withUserContext(1, mac, ip),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckReservationExists(resourceName),
-					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
-					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
-					resource.TestCheckResourceAttrSet(resourceName, "user_context"),
-				),
-			},
-		},
-	})
 }
 
 func testAccReservationConfig_withUserContext(subnetID uint32, mac, ip string) string {
