@@ -110,7 +110,7 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *kea.Reservation) diag
 			diags.Append(odModel.FromAPI(ctx, &od)...)
 			optionDataModels = append(optionDataModels, odModel)
 		}
-		optionDataSet, d := types.SetValueFrom(ctx, m.OpcompletetionData.ElementType(ctx), optionDataModels)
+		optionDataSet, d := types.SetValueFrom(ctx, m.OptionData.ElementType(ctx), optionDataModels)
 		diags.Append(d...)
 		m.OptionData = optionDataSet
 	} else {
