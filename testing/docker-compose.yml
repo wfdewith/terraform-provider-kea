@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      KEA_VERSION: ${KEA_VERSION}
+    volumes:
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kea-dhcp4:
+    image: docker.cloudsmith.io/isc/docker/kea-dhcp4:${KEA_VERSION}
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 8000:8000
+      - 8001:8001
+    volumes:
+      - ./kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
+      - ./init-network.sh:/usr/local/bin/init-network.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/init-network.sh"]
