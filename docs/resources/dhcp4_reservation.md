@@ -51,3 +51,4 @@ Optional:
 - `data` (String) Value of the DHCP option. Format depends on the option type and csv_format setting. When csv_format is true (default), data is comma-separated values (e.g., '192.0.2.1,192.0.2.2' for DNS servers). When csv_format is false, data is a hexadecimal string (e.g., 'c000020a' for IP 192.0.2.10).
 - `name` (String) Name of the DHCP option (e.g., 'domain-name-servers', 'routers'). Either name or code must be specified. If both are specified, they must refer to the same DHCP option (e.g., name='routers' and code=3).
 - `never_send` (Boolean) When true, prevents the server from sending this option to the client, even if it would normally be sent. Useful for explicitly blocking certain options for specific clients.
+- `space` (String) Option space name. Defaults to 'dhcp4' for DHCPv4 options. Use custom space names for vendor-specific or custom option spaces.

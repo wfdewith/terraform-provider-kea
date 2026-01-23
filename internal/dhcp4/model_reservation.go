@@ -34,6 +34,7 @@ type ReservationModel struct {
 type OptionDataModel struct {
 	Name          types.String `tfsdk:"name"`
 	Code          types.Int32  `tfsdk:"code"`
+	Space         types.String `tfsdk:"space"`
 	Data          types.String `tfsdk:"data"`
 	CSVFormat     types.Bool   `tfsdk:"csv_format"`
 	AlwaysSend    types.Bool   `tfsdk:"always_send"`
@@ -109,7 +110,7 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *kea.Reservation) diag
 			diags.Append(odModel.FromAPI(ctx, &od)...)
 			optionDataModels = append(optionDataModels, odModel)
 		}
-		optionDataSet, d := types.SetValueFrom(ctx, m.OptionData.ElementType(ctx), optionDataModels)
+		optionDataSet, d := types.SetValueFrom(ctx, m.OpcompletetionData.ElementType(ctx), optionDataModels)
 		diags.Append(d...)
 		m.OptionData = optionDataSet
 	} else {
@@ -163,6 +164,7 @@ func (o *OptionDataModel) ToAPI(ctx context.Context) (kea.OptionData, diag.Diagn
 	option := kea.OptionData{
 		Name:       o.Name.ValueString(),
 		Code:       uint8(o.Code.ValueInt32()),
+		Space:      o.Space.ValueString(),
 		Data:       o.Data.ValueString(),
 		CSVFormat:  boolPointer(o.CSVFormat),
 		AlwaysSend: boolPointer(o.AlwaysSend),
@@ -181,6 +183,7 @@ func (o *OptionDataModel) FromAPI(ctx context.Context, od *kea.OptionData) diag.
 
 	o.Name = types.StringValue(od.Name)
 	o.Code = types.Int32Value(int32(od.Code))
+	o.Space = stringOrNull(od.Space)
 	o.Data = types.StringValue(od.Data)
 	o.CSVFormat = types.BoolPointerValue(od.CSVFormat)
 	o.AlwaysSend = types.BoolPointerValue(od.AlwaysSend)

@@ -155,6 +155,13 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 								int32validator.Between(0, math.MaxUint8),
 							},
 						},
+						"space": schema.StringAttribute{
+							Description: "Option space name. " +
+								"Defaults to 'dhcp4' for DHCPv4 options. " +
+								"Use custom space names for vendor-specific or custom option spaces.",
+							Optional: true,
+							Computed: true,
+						},
 						"data": schema.StringAttribute{
 							Description: "Value of the DHCP option. " +
 								"Format depends on the option type and csv_format setting. " +
