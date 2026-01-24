@@ -1,3 +1,24 @@
+# Basic DHCP reservation using MAC address
+resource "kea_dhcp4_reservation" "server01" {
+  subnet_id  = 1
+  hw_address = "aa:bb:cc:dd:ee:01"
+  ip_address = "192.0.2.10"
+}
+
+# Reservation using client ID
+resource "kea_dhcp4_reservation" "server02" {
+  subnet_id  = 1
+  client_id  = "01:aa:bb:cc:dd:ee:02"
+  ip_address = "192.0.2.11"
+}
+
+# Global reservation (not bound to a specific subnet)
+resource "kea_dhcp4_reservation" "global_device" {
+  subnet_id  = 0
+  hw_address = "aa:bb:cc:dd:ee:ff"
+  ip_address = "192.0.2.100"
+}
+
 # Advanced reservation with DHCP options
 resource "kea_dhcp4_reservation" "web_server" {
   subnet_id  = 2
@@ -5,19 +26,16 @@ resource "kea_dhcp4_reservation" "web_server" {
   ip_address = "198.51.100.10"
   hostname   = "web-server"
 
-  # Custom DNS servers
   option_data {
     name = "domain-name-servers"
     data = "198.51.100.1, 198.51.100.2"
   }
 
-  # Domain name
   option_data {
     name = "domain-name"
     data = "example.com"
   }
 
-  # Custom MTU
   option_data {
     name = "interface-mtu"
     data = "9000"
@@ -33,7 +51,6 @@ resource "kea_dhcp4_reservation" "pxe_client" {
   next_server    = "198.51.100.5"
   boot_file_name = "pxelinux.0"
 
-  # TFTP server name (option 66)
   option_data {
     name = "tftp-server-name"
     data = "198.51.100.5"
@@ -82,7 +99,7 @@ resource "kea_dhcp4_reservation" "monitored_device" {
   ip_address = "203.0.113.30"
   hostname   = "monitored-server"
 
-  # Store arbitrary JSON metadata that can be queried programmatically
+  # Arbitrary JSON metadata stored with the reservation
   user_context = jsonencode({
     department  = "engineering"
     owner       = "network-team"
