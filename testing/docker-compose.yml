@@ -13,7 +13,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 12
+      start_period: 60s
 
   kea-dhcp4:
     image: docker.cloudsmith.io/isc/docker/kea-dhcp4:${KEA_VERSION}
@@ -41,6 +41,6 @@ services:
         - -O
         - /dev/null
         - http://127.0.0.1:8000/
-      interval: 5s
+      interval: 30s
       timeout: 5s
-      retries: 60
+      start_period: 60s
