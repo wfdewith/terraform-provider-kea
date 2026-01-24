@@ -74,19 +74,12 @@ jobs:
 
   lint:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        go:
-          - oldstable
-          - stable
-
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Setup Go ${{ matrix.go }}
+      - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6.2.0
         with:
-          go-version: ${{ matrix.go }}
+          go-version: stable
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
         with:
           terraform_wrapper: false
