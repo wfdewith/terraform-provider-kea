@@ -185,7 +185,7 @@ func (o *OptionDataModel) FromAPI(ctx context.Context, od *kea.OptionData) diag.
 	o.Name = types.StringValue(od.Name)
 	o.Code = types.Int32Value(int32(od.Code))
 	o.Space = stringOrNull(od.Space)
-	o.Data = types.StringValue(od.Data)
+	o.Data = stringOrNull(od.Data)
 	o.CSVFormat = types.BoolPointerValue(od.CSVFormat)
 	o.AlwaysSend = types.BoolPointerValue(od.AlwaysSend)
 	o.NeverSend = types.BoolPointerValue(od.NeverSend)
