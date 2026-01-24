@@ -34,10 +34,23 @@ vet:
 		exit 1; \
 	fi
 
-fmt:
+fmt-go:
 	gofmt -w $(GOFMT_FILES)
 
-fmtcheck:
+fmt-tf:
+	@if command -v terraform > /dev/null; then \
+		echo "==> Running terraform fmt"; \
+		terraform fmt -recursive; \
+	elif command -v tofu > /dev/null; then \
+		echo "==> Running tofu fmt"; \
+		tofu fmt -recursive; \
+	else \
+		echo "Missing \"terraform\" command, not formatting .tf" >&2; exit 1; \
+	fi
+
+fmt: fmt-go fmt-tf
+
+fmtcheck-go:
 	@echo "==> Checking that code complies with gofmt requirements..." ; \
 	files=$$(find . -name '*.go') ; \
 	gofmt_files=$$(gofmt -l $$files); \
@@ -48,22 +61,28 @@ fmtcheck:
 		exit 1; \
 	fi
 
-static-analysis:
+fmtcheck-tf:
+	@if command -v terraform > /dev/null; then \
+		echo "==> Running terraform fmt check"; \
+		terraform fmt -recursive -check -diff; \
+	elif command -v tofu > /dev/null; then \
+		echo "==> Running tofu fmt check"; \
+		tofu fmt -recursive -check -diff; \
+	else \
+		echo "Missing \"terraform\" command, not checking .tf format" >&2; exit 1; \
+	fi
+
+fmtcheck: fmtcheck-go fmtcheck-tf
+
+lint: vet
 	@if command -v golangci-lint > /dev/null; then \
 		echo "==> Running golangci-lint"; \
 		golangci-lint run --timeout 5m; \
 	else \
 		echo "Missing \"golangci-lint\" command, not linting .go" >&2; exit 1; \
 	fi
-	@if command -v terraform > /dev/null; then \
-		echo "==> Running terraform fmt"; \
-		terraform fmt -recursive -check -diff; \
-	elif command -v tofu > /dev/null; then \
-		echo "==> Running tofu fmt"; \
-		tofu fmt -recursive -check -diff; \
-	else \
-		echo "Missing \"terraform\" command, not checking .tf format" >&2; exit 1; \
-	fi
+
+static-analysis: lint fmtcheck
 
 update-gomod:
 	$(GO) get -t -v -u ./...
@@ -71,4 +90,4 @@ update-gomod:
 	$(GO) get toolchain@none
 	@echo "Dependencies updated"
 
-.PHONY: build test testacc vet fmt fmtcheck generate static-analysis update-gomod
+.PHONY: build test testacc vet fmt fmt-go fmt-tf fmtcheck fmtcheck-go fmtcheck-tf generate lint static-analysis update-gomod
