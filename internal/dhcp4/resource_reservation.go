@@ -37,7 +37,8 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 		Description: "Manages a DHCPv4 host reservation in the Kea DHCP server. " +
 			"Host reservations allow binding specific DHCP resources (such as IP addresses and options) to individual clients " +
 			"identified by unique identifiers like MAC addresses, client IDs, or circuit IDs. " +
-			"Reservations can be scoped to a specific subnet or configured globally (subnet_id = 0).",
+			"Reservations can be scoped to a specific subnet or configured globally (subnet_id = 0).\n\n" +
+			"**Important:** This resource requires the `host_cmds` hook library to be loaded and a hosts database backend to be configured on the Kea server.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

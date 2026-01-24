@@ -4,11 +4,14 @@ page_title: "kea_dhcp4_reservation Resource - kea"
 subcategory: ""
 description: |-
   Manages a DHCPv4 host reservation in the Kea DHCP server. Host reservations allow binding specific DHCP resources (such as IP addresses and options) to individual clients identified by unique identifiers like MAC addresses, client IDs, or circuit IDs. Reservations can be scoped to a specific subnet or configured globally (subnet_id = 0).
+  Important: This resource requires the host_cmds hook library to be loaded and a hosts database backend to be configured on the Kea server.
 ---
 
 # kea_dhcp4_reservation (Resource)
 
 Manages a DHCPv4 host reservation in the Kea DHCP server. Host reservations allow binding specific DHCP resources (such as IP addresses and options) to individual clients identified by unique identifiers like MAC addresses, client IDs, or circuit IDs. Reservations can be scoped to a specific subnet or configured globally (subnet_id = 0).
+
+**Important:** This resource requires the `host_cmds` hook library to be loaded and a hosts database backend to be configured on the Kea server.
 
 
 

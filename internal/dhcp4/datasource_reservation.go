@@ -34,7 +34,8 @@ func (d *ReservationDataSource) Schema(ctx context.Context, req datasource.Schem
 	resp.Schema = schema.Schema{
 		Description: "Retrieves a DHCPv4 host reservation from the Kea DHCP server. " +
 			"Host reservations bind specific DHCP resources to individual clients identified by unique identifiers. " +
-			"Use this data source to look up existing reservations by client identifier.",
+			"Use this data source to look up existing reservations by client identifier.\n\n" +
+			"**Important:** This data source requires the `host_cmds` hook library to be loaded on the Kea server.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

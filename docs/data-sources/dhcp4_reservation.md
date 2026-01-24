@@ -4,11 +4,14 @@ page_title: "kea_dhcp4_reservation Data Source - kea"
 subcategory: ""
 description: |-
   Retrieves a DHCPv4 host reservation from the Kea DHCP server. Host reservations bind specific DHCP resources to individual clients identified by unique identifiers. Use this data source to look up existing reservations by client identifier.
+  Important: This data source requires the host_cmds hook library to be loaded on the Kea server.
 ---
 
 # kea_dhcp4_reservation (Data Source)
 
 Retrieves a DHCPv4 host reservation from the Kea DHCP server. Host reservations bind specific DHCP resources to individual clients identified by unique identifiers. Use this data source to look up existing reservations by client identifier.
+
+**Important:** This data source requires the `host_cmds` hook library to be loaded on the Kea server.
 
 
 
