@@ -50,6 +50,7 @@ func (m *ReservationModel) ToAPI(ctx context.Context) (kea.Reservation, diag.Dia
 		CircuitID:      m.CircuitID.ValueString(),
 		ClientID:       m.ClientID.ValueString(),
 		DUID:           m.DUID.ValueString(),
+		FlexID:         m.FlexID.ValueString(),
 		HWAddress:      m.HWAddress.ValueString(),
 		IPAddress:      m.IPAddress.ValueString(),
 		BootFileName:   m.BootFileName.ValueString(),
