@@ -3,15 +3,15 @@
 page_title: "kea_dhcp4_reservation Data Source - kea"
 subcategory: ""
 description: |-
-  Retrieves a DHCPv4 host reservation from the Kea DHCP server. Host reservations bind specific DHCP resources to individual clients identified by unique identifiers. Use this data source to look up existing reservations by client identifier.
-  Important: This data source requires the host_cmds hook library to be loaded on the Kea server.
+  Retrieves a DHCPv4 host reservation from the Kea DHCP server.
+  Important: Requires the host_cmds hook library.
 ---
 
 # kea_dhcp4_reservation (Data Source)
 
-Retrieves a DHCPv4 host reservation from the Kea DHCP server. Host reservations bind specific DHCP resources to individual clients identified by unique identifiers. Use this data source to look up existing reservations by client identifier.
+Retrieves a DHCPv4 host reservation from the Kea DHCP server.
 
-**Important:** This data source requires the `host_cmds` hook library to be loaded on the Kea server.
+**Important:** Requires the `host_cmds` hook library.
 
 ## Example Usage
 
@@ -76,26 +76,26 @@ output "device_location" {
 
 ### Required
 
-- `subnet_id` (Number) The ID of the subnet containing the reservation. Use a value of zero (0) to look up global reservations. For subnet-specific reservations, use the subnet's numeric identifier.
+- `subnet_id` (Number) Subnet ID for this reservation, or `0` for a global reservation.
 
 ### Optional
 
-- `circuit_id` (String) Circuit ID option value (Option 82 sub-option 1) to identify which reservation to retrieve. Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.
-- `client_id` (String) DHCPv4 client identifier (Option 61) to identify which reservation to retrieve. Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.
-- `duid` (String) DHCP Unique Identifier to identify which reservation to retrieve. Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.
-- `flex_id` (String) Flexible identifier to identify which reservation to retrieve. Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.
-- `hw_address` (String) Hardware (MAC) address to identify which reservation to retrieve. Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.
+- `circuit_id` (String) Circuit ID (Option 82 sub-option 1) to identify the client. Typically inserted by relay agents. Mutually exclusive with other identifier types.
+- `client_id` (String) Client identifier (Option 61) to identify the client. Mutually exclusive with other identifier types.
+- `duid` (String) DHCP Unique Identifier. Typically used in DHCPv6 but also supported for DHCPv4. Mutually exclusive with other identifier types.
+- `flex_id` (String) Flexible identifier from the `flex_id` hook library. Mutually exclusive with other identifier types.
+- `hw_address` (String) Hardware (MAC) address to identify the client. Mutually exclusive with other identifier types.
 
 ### Read-Only
 
-- `boot_file_name` (String) Boot file name (corresponds to the 'file' field in the DHCP packet and DHCP option 67) configured for this reservation.
-- `client_classes` (Set of String) List of client class names assigned to this reserved client.
-- `hostname` (String) Hostname assigned to the reserved client.
+- `boot_file_name` (String) Boot file name for network booting (`file` field in DHCP packet, Option 67).
+- `client_classes` (Set of String) Assigned client classes.
+- `hostname` (String) Assigned hostname.
 - `id` (String) Unique identifier for the reservation in the format `{subnet_id}/{identifier_type}/{identifier}`.
-- `ip_address` (String) IPv4 address reserved for this client.
-- `next_server` (String) IPv4 address of the next server (corresponds to the 'siaddr' field in the DHCP packet) configured for this reservation.
+- `ip_address` (String) Reserved IPv4 address.
+- `next_server` (String) Next server address for network booting (`siaddr` field in DHCP packet).
 - `option_data` (Attributes Set) DHCP options configured for this reservation. (see [below for nested schema](#nestedatt--option_data))
-- `server_hostname` (String) Server hostname (corresponds to the 'sname' field in the DHCP packet) configured for this reservation.
+- `server_hostname` (String) Server hostname for network booting (`sname` field in DHCP packet).
 - `user_context` (String) Arbitrary JSON data stored with this reservation.
 
 <a id="nestedatt--option_data"></a>
@@ -103,10 +103,10 @@ output "device_location" {
 
 Read-Only:
 
-- `always_send` (Boolean) Whether the server always sends this option to the client, even if not requested.
+- `always_send` (Boolean) Whether this option is always sent to the client.
 - `client_classes` (Set of String) Client classes for which this option applies.
-- `code` (Number) Numeric code of the DHCP option.
-- `csv_format` (Boolean) Whether the option data is in comma-separated value format (true) or hexadecimal format (false).
-- `data` (String) Value of the DHCP option.
-- `name` (String) Name of the DHCP option.
-- `never_send` (Boolean) Whether the server never sends this option to the client.
+- `code` (Number) Option code.
+- `csv_format` (Boolean) Whether data is in CSV format (`true`) or raw format (`false`).
+- `data` (String) Option value.
+- `name` (String) Option name.
+- `never_send` (Boolean) Whether this option is never sent to the client.

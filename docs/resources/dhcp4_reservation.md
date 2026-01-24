@@ -3,15 +3,15 @@
 page_title: "kea_dhcp4_reservation Resource - kea"
 subcategory: ""
 description: |-
-  Manages a DHCPv4 host reservation in the Kea DHCP server. Host reservations allow binding specific DHCP resources (such as IP addresses and options) to individual clients identified by unique identifiers like MAC addresses, client IDs, or circuit IDs. Reservations can be scoped to a specific subnet or configured globally (subnet_id = 0).
-  Important: This resource requires the host_cmds hook library to be loaded and a hosts database backend to be configured on the Kea server.
+  Manages a DHCPv4 host reservation in the Kea DHCP server. Host reservations bind specific IP addresses and DHCP options to clients identified by MAC address, client ID, or other identifiers.
+  Important: Requires the host_cmds hook library and a hosts database backend.
 ---
 
 # kea_dhcp4_reservation (Resource)
 
-Manages a DHCPv4 host reservation in the Kea DHCP server. Host reservations allow binding specific DHCP resources (such as IP addresses and options) to individual clients identified by unique identifiers like MAC addresses, client IDs, or circuit IDs. Reservations can be scoped to a specific subnet or configured globally (subnet_id = 0).
+Manages a DHCPv4 host reservation in the Kea DHCP server. Host reservations bind specific IP addresses and DHCP options to clients identified by MAC address, client ID, or other identifiers.
 
-**Important:** This resource requires the `host_cmds` hook library to be loaded and a hosts database backend to be configured on the Kea server.
+**Important:** Requires the `host_cmds` hook library and a hosts database backend.
 
 ## Example Usage
 
@@ -137,23 +137,23 @@ resource "kea_dhcp4_reservation" "monitored_device" {
 
 ### Required
 
-- `subnet_id` (Number) The ID of the subnet to which the reservation belongs. Use a value of zero (0) to create a global reservation that applies across all subnets. For subnet-specific reservations, use the subnet's numeric identifier as defined in the Kea configuration.
+- `subnet_id` (Number) Subnet ID for this reservation, or `0` for a global reservation.
 
 ### Optional
 
-- `boot_file_name` (String) Boot file name (corresponds to the 'file' field in the DHCP packet and DHCP option 67). Used for network booting scenarios to specify the boot file that the client should download.
-- `circuit_id` (String) Circuit ID option value (Option 82 sub-option 1) used to identify the DHCP client. Typically inserted by DHCP relay agents. Only one identifier type (circuit_id, client_id, duid, flex_id, or hw_address) should be specified per reservation.
-- `client_classes` (Set of String) List of client class names to assign to this reserved client. Client classes allow different groups of clients to receive different DHCP configuration. Classes must be defined in the Kea server configuration.
-- `client_id` (String) DHCPv4 client identifier (Option 61) used to identify the DHCP client. This is a unique identifier sent by the client in DHCP messages. Only one identifier type (circuit_id, client_id, duid, flex_id, or hw_address) should be specified per reservation.
-- `duid` (String) DHCP Unique Identifier used to identify the client. While typically used in DHCPv6, it can also be used for DHCPv4 client identification. Only one identifier type (circuit_id, client_id, duid, flex_id, or hw_address) should be specified per reservation.
-- `flex_id` (String) Flexible identifier used to identify the client. This is a custom identifier configured via the flex_id hook library, allowing flexible client identification based on various packet attributes. Only one identifier type (circuit_id, client_id, duid, flex_id, or hw_address) should be specified per reservation.
-- `hostname` (String) Hostname to assign to the reserved client. This can be used for dynamic DNS updates and to populate the hostname option (Option 12) sent to the client.
-- `hw_address` (String) Hardware (MAC) address of the client's network interface. This is the most commonly used identifier for DHCPv4 reservations. Only one identifier type (circuit_id, client_id, duid, flex_id, or hw_address) should be specified per reservation.
-- `ip_address` (String) IPv4 address to reserve for this client. When specified, the Kea server will always assign this address to the identified client. The address must be within the range of the subnet (if subnet_id is non-zero) or can be any valid IPv4 address for global reservations.
-- `next_server` (String) IPv4 address of the next server to use in the boot process (corresponds to the 'siaddr' field in the DHCP packet). Typically used in network boot scenarios to specify the TFTP server address.
-- `option_data` (Block Set) DHCP options to be sent to the reserved client. These options override subnet-level and global options for this specific client. Options can be specified by name or numeric code. (see [below for nested schema](#nestedblock--option_data))
-- `server_hostname` (String) Server hostname (corresponds to the 'sname' field in the DHCP packet). Used in network boot scenarios to specify the name of the boot server.
-- `user_context` (String) Arbitrary JSON data to store custom information with this reservation. This can be used to store additional metadata such as contact information, asset tags, or other operational data. The data is stored but not processed by Kea.
+- `boot_file_name` (String) Boot file name for network booting (`file` field in DHCP packet, Option 67).
+- `circuit_id` (String) Circuit ID (Option 82 sub-option 1) to identify the client. Typically inserted by relay agents. Mutually exclusive with other identifier types.
+- `client_classes` (Set of String) Client classes to assign to this client.
+- `client_id` (String) Client identifier (Option 61) to identify the client. Mutually exclusive with other identifier types.
+- `duid` (String) DHCP Unique Identifier. Typically used in DHCPv6 but also supported for DHCPv4. Mutually exclusive with other identifier types.
+- `flex_id` (String) Flexible identifier from the `flex_id` hook library. Mutually exclusive with other identifier types.
+- `hostname` (String) Hostname to assign to the client.
+- `hw_address` (String) Hardware (MAC) address to identify the client. Mutually exclusive with other identifier types.
+- `ip_address` (String) IPv4 address to reserve for this client.
+- `next_server` (String) Next server address for network booting (`siaddr` field in DHCP packet).
+- `option_data` (Block Set) DHCP options to send to this client, overriding subnet and global options. (see [below for nested schema](#nestedblock--option_data))
+- `server_hostname` (String) Server hostname for network booting (`sname` field in DHCP packet).
+- `user_context` (String) Arbitrary JSON data stored with this reservation.
 
 ### Read-Only
 
@@ -164,11 +164,11 @@ resource "kea_dhcp4_reservation" "monitored_device" {
 
 Optional:
 
-- `always_send` (Boolean) When true, the server sends this option to the client even if the client did not request it in the Parameter Request List (Option 55). Useful for ensuring critical options are always delivered.
-- `client_classes` (Set of String) List of client class names for which this option applies. If specified, the option is only sent to clients that are members of at least one of these classes.
-- `code` (Number) Numeric code of the DHCP option (0-255). Either name or code must be specified. If both are specified, they must refer to the same DHCP option (e.g., name='routers' and code=3).
-- `csv_format` (Boolean) Format of the option data. When true (default), data is interpreted as comma-separated values appropriate for the option type. When false, data is interpreted as a raw hexadecimal string.
-- `data` (String) Value of the DHCP option. Format depends on the option type and csv_format setting. When csv_format is true (default), data is comma-separated values (e.g., '192.0.2.1,192.0.2.2' for DNS servers). When csv_format is false, data is a hexadecimal string (e.g., 'c000020a' for IP 192.0.2.10).
-- `name` (String) Name of the DHCP option (e.g., 'domain-name-servers', 'routers'). Either name or code must be specified. If both are specified, they must refer to the same DHCP option (e.g., name='routers' and code=3).
-- `never_send` (Boolean) When true, prevents the server from sending this option to the client, even if it would normally be sent. Useful for explicitly blocking certain options for specific clients.
-- `space` (String) Option space name. Defaults to 'dhcp4' for DHCPv4 options. Use custom space names for vendor-specific or custom option spaces.
+- `always_send` (Boolean) Always send this option, even if not requested by the client.
+- `client_classes` (Set of String) Only send this option to clients in these classes.
+- `code` (Number) Option code (0-255). Required if `name` is not set.
+- `csv_format` (Boolean) When `true` (default), data is comma-separated values. When `false`, data is raw bytes as hex (`dead` or `0xdead`), colon/space-delimited octets (`de:ad` or `de ad`), or a quoted string (`'text'`).
+- `data` (String) Option value. Format depends on `csv_format`.
+- `name` (String) Option name (e.g., `domain-name-servers`). Required if `code` is not set.
+- `never_send` (Boolean) Never send this option to the client.
+- `space` (String) Option space. Defaults to `dhcp4`.

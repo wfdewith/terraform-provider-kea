@@ -45,37 +45,29 @@ func (p *KeaProvider) Metadata(_ context.Context, _ provider.MetadataRequest, re
 
 func (p *KeaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The Kea provider enables management of Kea DHCP server resources via the Kea control channel. " +
-			"Kea servers expose a management API that allows online reconfiguration and monitoring without requiring server restarts. " +
-			"This provider communicates directly with Kea servers using either UNIX domain sockets (for local connections) or " +
-			"HTTP/HTTPS control sockets (for remote connections).",
+		Description: "The Kea provider enables management of Kea DHCP server resources via the control channel API. " +
+			"It connects to Kea servers using UNIX domain sockets or HTTP/HTTPS endpoints.",
 		Attributes: map[string]schema.Attribute{
 			"dhcp4": schema.SingleNestedAttribute{
 				Optional:    true,
-				Description: "Configuration for connecting to the Kea DHCPv4 server's control channel.",
+				Description: "Connection settings for the Kea DHCPv4 server.",
 				Attributes: map[string]schema.Attribute{
 					"address": schema.StringAttribute{
 						Optional: true,
-						Description: "Address of the Kea DHCPv4 server's control channel. " +
-							"Supports UNIX domain sockets (e.g., 'unix:///tmp/kea4-ctrl-socket') for direct local connections to the server, " +
-							"or HTTP/HTTPS URLs (e.g., 'http://localhost:8000' or 'https://kea.example.org:8443') for connections to the server's HTTP control socket. " +
-							"Can also be set via the KEA_DHCP4_ADDRESS environment variable.",
+						Description: "Control channel address: `unix:///path/to/socket` or `http(s)://host:port`. " +
+							"Falls back to `KEA_DHCP4_ADDRESS` environment variable.",
 						Validators: []validator.String{
 							IsValidKeaURL(),
 						},
 					},
 					"http_username": schema.StringAttribute{
-						Optional: true,
-						Description: "Username for HTTP basic authentication when connecting to HTTP/HTTPS control sockets. " +
-							"Only used when the address is an HTTP or HTTPS URL. " +
-							"Can also be set via the KEA_DHCP4_HTTP_USERNAME environment variable.",
+						Optional:    true,
+						Description: "Username for HTTP basic authentication. Falls back to `KEA_DHCP4_HTTP_USERNAME` environment variable.",
 					},
 					"http_password": schema.StringAttribute{
-						Optional:  true,
-						Sensitive: true,
-						Description: "Password for HTTP basic authentication when connecting to HTTP/HTTPS control sockets. " +
-							"Only used when the address is an HTTP or HTTPS URL. " +
-							"Can also be set via the KEA_DHCP4_HTTP_PASSWORD environment variable.",
+						Optional:    true,
+						Sensitive:   true,
+						Description: "Password for HTTP basic authentication. Falls back to `KEA_DHCP4_HTTP_PASSWORD` environment variable.",
 					},
 				},
 			},

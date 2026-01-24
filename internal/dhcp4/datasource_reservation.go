@@ -32,78 +32,71 @@ func (d *ReservationDataSource) Metadata(ctx context.Context, req datasource.Met
 
 func (d *ReservationDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Retrieves a DHCPv4 host reservation from the Kea DHCP server. " +
-			"Host reservations bind specific DHCP resources to individual clients identified by unique identifiers. " +
-			"Use this data source to look up existing reservations by client identifier.\n\n" +
-			"**Important:** This data source requires the `host_cmds` hook library to be loaded on the Kea server.",
+		Description: "Retrieves a DHCPv4 host reservation from the Kea DHCP server.\n\n" +
+			"**Important:** Requires the `host_cmds` hook library.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Unique identifier for the reservation in the format `{subnet_id}/{identifier_type}/{identifier}`.",
 			},
 			"subnet_id": schema.Int64Attribute{
-				Description: "The ID of the subnet containing the reservation. " +
-					"Use a value of zero (0) to look up global reservations. " +
-					"For subnet-specific reservations, use the subnet's numeric identifier.",
-				Required: true,
+				Description: "Subnet ID for this reservation, or `0` for a global reservation.",
+				Required:    true,
 				Validators: []validator.Int64{
 					int64validator.Between(0, math.MaxUint32),
 				},
 			},
 
 			"circuit_id": schema.StringAttribute{
-				Description: "Circuit ID option value (Option 82 sub-option 1) to identify which reservation to retrieve. " +
-					"Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.",
+				Description: "Circuit ID (Option 82 sub-option 1) to identify the client. Typically inserted by relay agents. " +
+					"Mutually exclusive with other identifier types.",
 				Optional: true,
 			},
 			"client_id": schema.StringAttribute{
-				Description: "DHCPv4 client identifier (Option 61) to identify which reservation to retrieve. " +
-					"Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.",
-				Optional: true,
+				Description: "Client identifier (Option 61) to identify the client. Mutually exclusive with other identifier types.",
+				Optional:    true,
 			},
 			"duid": schema.StringAttribute{
-				Description: "DHCP Unique Identifier to identify which reservation to retrieve. " +
-					"Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.",
+				Description: "DHCP Unique Identifier. Typically used in DHCPv6 but also supported for DHCPv4. " +
+					"Mutually exclusive with other identifier types.",
 				Optional: true,
 			},
 			"flex_id": schema.StringAttribute{
-				Description: "Flexible identifier to identify which reservation to retrieve. " +
-					"Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.",
-				Optional: true,
+				Description: "Flexible identifier from the `flex_id` hook library. Mutually exclusive with other identifier types.",
+				Optional:    true,
 			},
 			"hw_address": schema.StringAttribute{
-				Description: "Hardware (MAC) address to identify which reservation to retrieve. " +
-					"Exactly one identifier (circuit_id, client_id, duid, flex_id, or hw_address) must be specified.",
-				Optional:   true,
-				CustomType: hwtypes.MACAddressType{},
+				Description: "Hardware (MAC) address to identify the client. Mutually exclusive with other identifier types.",
+				Optional:    true,
+				CustomType:  hwtypes.MACAddressType{},
 			},
 
 			"ip_address": schema.StringAttribute{
-				Description: "IPv4 address reserved for this client.",
+				Description: "Reserved IPv4 address.",
 				Computed:    true,
 				CustomType:  iptypes.IPv4AddressType{},
 			},
 
 			"boot_file_name": schema.StringAttribute{
-				Description: "Boot file name (corresponds to the 'file' field in the DHCP packet and DHCP option 67) configured for this reservation.",
+				Description: "Boot file name for network booting (`file` field in DHCP packet, Option 67).",
 				Computed:    true,
 			},
 			"client_classes": schema.SetAttribute{
-				Description: "List of client class names assigned to this reserved client.",
+				Description: "Assigned client classes.",
 				Computed:    true,
 				ElementType: types.StringType,
 			},
 			"hostname": schema.StringAttribute{
-				Description: "Hostname assigned to the reserved client.",
+				Description: "Assigned hostname.",
 				Computed:    true,
 			},
 			"next_server": schema.StringAttribute{
-				Description: "IPv4 address of the next server (corresponds to the 'siaddr' field in the DHCP packet) configured for this reservation.",
+				Description: "Next server address for network booting (`siaddr` field in DHCP packet).",
 				Computed:    true,
 				CustomType:  iptypes.IPv4AddressType{},
 			},
 			"server_hostname": schema.StringAttribute{
-				Description: "Server hostname (corresponds to the 'sname' field in the DHCP packet) configured for this reservation.",
+				Description: "Server hostname for network booting (`sname` field in DHCP packet).",
 				Computed:    true,
 			},
 			"user_context": schema.StringAttribute{
@@ -117,27 +110,27 @@ func (d *ReservationDataSource) Schema(ctx context.Context, req datasource.Schem
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
-							Description: "Name of the DHCP option.",
+							Description: "Option name.",
 							Computed:    true,
 						},
 						"code": schema.Int32Attribute{
-							Description: "Numeric code of the DHCP option.",
+							Description: "Option code.",
 							Computed:    true,
 						},
 						"data": schema.StringAttribute{
-							Description: "Value of the DHCP option.",
+							Description: "Option value.",
 							Computed:    true,
 						},
 						"csv_format": schema.BoolAttribute{
-							Description: "Whether the option data is in comma-separated value format (true) or hexadecimal format (false).",
+							Description: "Whether data is in CSV format (`true`) or raw format (`false`).",
 							Computed:    true,
 						},
 						"always_send": schema.BoolAttribute{
-							Description: "Whether the server always sends this option to the client, even if not requested.",
+							Description: "Whether this option is always sent to the client.",
 							Computed:    true,
 						},
 						"never_send": schema.BoolAttribute{
-							Description: "Whether the server never sends this option to the client.",
+							Description: "Whether this option is never sent to the client.",
 							Computed:    true,
 						},
 						"client_classes": schema.SetAttribute{
