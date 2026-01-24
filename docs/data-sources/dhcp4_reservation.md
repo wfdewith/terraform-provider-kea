@@ -47,6 +47,12 @@ data "kea_dhcp4_reservation" "by_client_id" {
   client_id = "01:aa:bb:cc:dd:ee:02"
 }
 
+# Look up a reservation by IP address
+data "kea_dhcp4_reservation" "by_ip" {
+  subnet_id  = 1
+  ip_address = "192.0.2.100"
+}
+
 # Use the user context from the reservation
 data "kea_dhcp4_reservation" "with_metadata" {
   subnet_id  = 3
@@ -85,6 +91,7 @@ output "device_location" {
 - `duid` (String) DHCP Unique Identifier. Typically used in DHCPv6 but also supported for DHCPv4. Mutually exclusive with other identifier types.
 - `flex_id` (String) Flexible identifier from the `flex_id` hook library. Mutually exclusive with other identifier types.
 - `hw_address` (String) Hardware (MAC) address to identify the client. Mutually exclusive with other identifier types.
+- `ip_address` (String) Reserved IPv4 address. Can be used to query for a reservation by IP address. Mutually exclusive with other identifier types.
 
 ### Read-Only
 
@@ -92,7 +99,6 @@ output "device_location" {
 - `client_classes` (Set of String) Assigned client classes.
 - `hostname` (String) Assigned hostname.
 - `id` (String) Unique identifier for the reservation in the format `{subnet_id}/{identifier_type}/{identifier}`.
-- `ip_address` (String) Reserved IPv4 address.
 - `next_server` (String) Next server address for network booting (`siaddr` field in DHCP packet).
 - `option_data` (Attributes Set) DHCP options configured for this reservation. (see [below for nested schema](#nestedatt--option_data))
 - `server_hostname` (String) Server hostname for network booting (`sname` field in DHCP packet).

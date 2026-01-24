@@ -72,6 +72,30 @@ func TestAccReservationDataSource_global(t *testing.T) {
 	})
 }
 
+func TestAccReservationDataSource_byIP(t *testing.T) {
+	mac := "02:4a:8c:f3:b2:d7"
+	ip := "10.67.0.45"
+	hostname := "test-host-by-ip"
+	resourceName := "data.kea_dhcp4_reservation.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationDataSourceConfig_byIP(1, mac, ip, hostname),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "subnet_id", "1"),
+					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
+					resource.TestCheckResourceAttr(resourceName, "hostname", hostname),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
 func testAccReservationDataSourceConfig_basic(subnetID uint32, mac, ip string) string {
 	return fmt.Sprintf(`
 %s
@@ -122,4 +146,22 @@ data "kea_dhcp4_reservation" "test" {
   hw_address = kea_dhcp4_reservation.test.hw_address
 }
 `, acctest.ProviderConfig(), mac, ip)
+}
+
+func testAccReservationDataSourceConfig_byIP(subnetID uint32, mac, ip, hostname string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  hw_address = %q
+  ip_address = %q
+  hostname   = %q
+}
+
+data "kea_dhcp4_reservation" "test" {
+  subnet_id  = kea_dhcp4_reservation.test.subnet_id
+  ip_address = kea_dhcp4_reservation.test.ip_address
+}
+`, acctest.ProviderConfig(), subnetID, mac, ip, hostname)
 }

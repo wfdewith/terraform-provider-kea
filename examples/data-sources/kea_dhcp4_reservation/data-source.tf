@@ -29,6 +29,12 @@ data "kea_dhcp4_reservation" "by_client_id" {
   client_id = "01:aa:bb:cc:dd:ee:02"
 }
 
+# Look up a reservation by IP address
+data "kea_dhcp4_reservation" "by_ip" {
+  subnet_id  = 1
+  ip_address = "192.0.2.100"
+}
+
 # Use the user context from the reservation
 data "kea_dhcp4_reservation" "with_metadata" {
   subnet_id  = 3

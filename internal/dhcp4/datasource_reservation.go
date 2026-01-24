@@ -72,9 +72,11 @@ func (d *ReservationDataSource) Schema(ctx context.Context, req datasource.Schem
 			},
 
 			"ip_address": schema.StringAttribute{
-				Description: "Reserved IPv4 address.",
-				Computed:    true,
-				CustomType:  iptypes.IPv4AddressType{},
+				Description: "Reserved IPv4 address. Can be used to query for a reservation by IP address. " +
+					"Mutually exclusive with other identifier types.",
+				Optional:   true,
+				Computed:   true,
+				CustomType: iptypes.IPv4AddressType{},
 			},
 
 			"boot_file_name": schema.StringAttribute{
@@ -153,6 +155,7 @@ func (d *ReservationDataSource) ConfigValidators(ctx context.Context) []datasour
 			path.MatchRoot("duid"),
 			path.MatchRoot("flex_id"),
 			path.MatchRoot("hw_address"),
+			path.MatchRoot("ip_address"),
 		),
 	}
 }

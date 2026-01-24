@@ -133,13 +133,22 @@ func (m *ReservationModel) BuildQuery() kea.ReservationQuery {
 	subnetID := uint32(m.SubnetID.ValueInt64())
 
 	identifierType, identifier := m.getIdentifier()
-	return kea.QueryReservationByIdentifier(subnetID, identifierType, identifier)
+	if identifierType != "" {
+		return kea.QueryReservationByIdentifier(subnetID, identifierType, identifier)
+	}
+
+	return kea.QueryReservationByIP(subnetID, m.IPAddress.ValueString())
 }
 
 func (m *ReservationModel) ComputeID() string {
 	subnetID := m.SubnetID.ValueInt64()
+
 	identifierType, identifier := m.getIdentifier()
-	return fmt.Sprintf("%d/%s/%s", subnetID, identifierType, identifier)
+	if identifierType != "" {
+		return fmt.Sprintf("%d/%s/%s", subnetID, identifierType, identifier)
+	}
+
+	return fmt.Sprintf("%d/ip-address/%s", subnetID, m.IPAddress.ValueString())
 }
 
 func (m *ReservationModel) getIdentifier() (identifierType, identifier string) {
