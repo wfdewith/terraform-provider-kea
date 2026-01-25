@@ -3,6 +3,7 @@ package keaquery
 import (
 	"encoding/json"
 	"fmt"
+	"net/netip"
 )
 
 type queryKind int
@@ -21,12 +22,12 @@ type ReservationQuery struct {
 
 	kind queryKind
 
-	ip             string
+	ip             netip.Addr
 	identifier     string
 	identifierType string
 }
 
-func ReservationByIP(subnetID uint32, ip string) ReservationQuery {
+func ReservationByIP(subnetID uint32, ip netip.Addr) ReservationQuery {
 	return ReservationQuery{
 		SubnetID: subnetID,
 		kind:     rqByIP,
@@ -43,9 +44,9 @@ func ReservationByIdentifier(subnetID uint32, idType, identifier string) Reserva
 	}
 }
 
-func (r ReservationQuery) IP() (ip string, ok bool) {
+func (r ReservationQuery) IP() (ip netip.Addr, ok bool) {
 	if r.kind != rqByIP {
-		return "", false
+		return netip.Addr{}, false
 	}
 	return r.ip, true
 }
@@ -61,8 +62,8 @@ func (r ReservationQuery) MarshalJSON() ([]byte, error) {
 	switch r.kind {
 	case rqByIP:
 		aux := struct {
-			SubnetID  uint32 `json:"subnet-id"`
-			IPAddress string `json:"ip-address"`
+			SubnetID  uint32     `json:"subnet-id"`
+			IPAddress netip.Addr `json:"ip-address"`
 		}{
 			SubnetID:  r.SubnetID,
 			IPAddress: r.ip,

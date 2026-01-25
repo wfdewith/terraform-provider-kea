@@ -138,7 +138,8 @@ func (m *ReservationModel) BuildQuery() keaquery.ReservationQuery {
 		return keaquery.ReservationByIdentifier(subnetID, identifierType, identifier)
 	}
 
-	return keaquery.ReservationByIP(subnetID, m.IPAddress.ValueString())
+	ip, _ := m.IPAddress.ValueIPv4Address()
+	return keaquery.ReservationByIP(subnetID, ip)
 }
 
 func (m *ReservationModel) ComputeID() string {
