@@ -2,6 +2,7 @@ package dhcp4
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/netip"
 
@@ -48,16 +49,16 @@ func (m *ReservationModel) ToAPI(ctx context.Context) (keadhcp4.Reservation, dia
 
 	reservation := keadhcp4.Reservation{
 		SubnetID:       uint32(m.SubnetID.ValueInt64()),
-		CircuitID:      m.CircuitID.ValueString(),
-		ClientID:       m.ClientID.ValueString(),
-		DUID:           m.DUID.ValueString(),
-		FlexID:         m.FlexID.ValueString(),
-		HWAddress:      m.HWAddress.ValueString(),
+		CircuitID:      m.CircuitID.ValueStringPointer(),
+		ClientID:       m.ClientID.ValueStringPointer(),
+		DUID:           m.DUID.ValueStringPointer(),
+		FlexID:         m.FlexID.ValueStringPointer(),
+		HWAddress:      m.HWAddress.ValueStringPointer(),
 		IPAddress:      ipv4Pointer(m.IPAddress),
-		BootFileName:   m.BootFileName.ValueString(),
-		Hostname:       m.Hostname.ValueString(),
+		BootFileName:   m.BootFileName.ValueStringPointer(),
+		Hostname:       m.Hostname.ValueStringPointer(),
 		NextServer:     ipv4Pointer(m.NextServer),
-		ServerHostname: m.ServerHostname.ValueString(),
+		ServerHostname: m.ServerHostname.ValueStringPointer(),
 	}
 
 	if !m.ClientClasses.IsNull() && !m.ClientClasses.IsUnknown() {
@@ -76,7 +77,8 @@ func (m *ReservationModel) ToAPI(ctx context.Context) (keadhcp4.Reservation, dia
 	}
 
 	if !m.UserContext.IsNull() && !m.UserContext.IsUnknown() {
-		reservation.UserContext = []byte(m.UserContext.ValueString())
+		userContext := json.RawMessage(m.UserContext.ValueString())
+		reservation.UserContext = &userContext
 	}
 
 	return reservation, diags
@@ -86,16 +88,16 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *keadhcp4.Reservation)
 	var diags diag.Diagnostics
 
 	m.SubnetID = types.Int64Value(int64(r.SubnetID))
-	m.CircuitID = stringOrNull(r.CircuitID)
-	m.ClientID = stringOrNull(r.ClientID)
-	m.DUID = stringOrNull(r.DUID)
-	m.FlexID = stringOrNull(r.FlexID)
-	m.HWAddress = macAddressOrNull(r.HWAddress)
-	m.IPAddress = ipv4AddressOrNull(r.IPAddress)
-	m.BootFileName = stringOrNull(r.BootFileName)
-	m.Hostname = stringOrNull(r.Hostname)
-	m.NextServer = ipv4AddressOrNull(r.NextServer)
-	m.ServerHostname = stringOrNull(r.ServerHostname)
+	m.CircuitID = types.StringPointerValue(r.CircuitID)
+	m.ClientID = types.StringPointerValue(r.ClientID)
+	m.DUID = types.StringPointerValue(r.DUID)
+	m.FlexID = types.StringPointerValue(r.FlexID)
+	m.HWAddress = hwtypes.NewMACAddressPointerValue(r.HWAddress)
+	m.IPAddress = iptypes.NewIPv4AddressPointerValue(addrPointerToString(r.IPAddress))
+	m.BootFileName = types.StringPointerValue(r.BootFileName)
+	m.Hostname = types.StringPointerValue(r.Hostname)
+	m.NextServer = iptypes.NewIPv4AddressPointerValue(addrPointerToString(r.NextServer))
+	m.ServerHostname = types.StringPointerValue(r.ServerHostname)
 
 	if len(r.ClientClasses) > 0 {
 		setVal, d := types.SetValueFrom(ctx, types.StringType, r.ClientClasses)
@@ -119,8 +121,8 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *keadhcp4.Reservation)
 		m.OptionData = types.SetNull(m.OptionData.ElementType(ctx))
 	}
 
-	if len(r.UserContext) > 0 {
-		m.UserContext = jsontypes.NewNormalizedValue(string(r.UserContext))
+	if r.UserContext != nil {
+		m.UserContext = jsontypes.NewNormalizedValue(string(*r.UserContext))
 	} else {
 		m.UserContext = jsontypes.NewNormalizedNull()
 	}
@@ -174,13 +176,17 @@ func (o *OptionDataModel) ToAPI(ctx context.Context) (keadhcp4.OptionData, diag.
 	var diags diag.Diagnostics
 
 	option := keadhcp4.OptionData{
-		Name:       o.Name.ValueString(),
-		Code:       uint8(o.Code.ValueInt32()),
-		Space:      o.Space.ValueString(),
-		Data:       o.Data.ValueString(),
+		Name:       stringPointer(o.Name),
+		Space:      stringPointer(o.Space),
+		Data:       stringPointer(o.Data),
 		CSVFormat:  boolPointer(o.CSVFormat),
 		AlwaysSend: boolPointer(o.AlwaysSend),
 		NeverSend:  boolPointer(o.NeverSend),
+	}
+
+	if !o.Code.IsNull() && !o.Code.IsUnknown() {
+		code := uint8(o.Code.ValueInt32())
+		option.Code = &code
 	}
 
 	if !o.ClientClasses.IsNull() && !o.ClientClasses.IsUnknown() {
@@ -193,10 +199,14 @@ func (o *OptionDataModel) ToAPI(ctx context.Context) (keadhcp4.OptionData, diag.
 func (o *OptionDataModel) FromAPI(ctx context.Context, od *keadhcp4.OptionData) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	o.Name = types.StringValue(od.Name)
-	o.Code = types.Int32Value(int32(od.Code))
-	o.Space = stringOrNull(od.Space)
-	o.Data = stringOrNull(od.Data)
+	o.Name = types.StringPointerValue(od.Name)
+	if od.Code != nil {
+		o.Code = types.Int32Value(int32(*od.Code))
+	} else {
+		o.Code = types.Int32Null()
+	}
+	o.Space = types.StringPointerValue(od.Space)
+	o.Data = types.StringPointerValue(od.Data)
 	o.CSVFormat = types.BoolPointerValue(od.CSVFormat)
 	o.AlwaysSend = types.BoolPointerValue(od.AlwaysSend)
 	o.NeverSend = types.BoolPointerValue(od.NeverSend)
@@ -212,25 +222,12 @@ func (o *OptionDataModel) FromAPI(ctx context.Context, od *keadhcp4.OptionData) 
 	return diags
 }
 
-func stringOrNull(s string) types.String {
-	if s == "" {
-		return types.StringNull()
+func addrPointerToString(ip *netip.Addr) *string {
+	if ip == nil {
+		return nil
 	}
-	return types.StringValue(s)
-}
-
-func macAddressOrNull(s string) hwtypes.MACAddress {
-	if s == "" {
-		return hwtypes.NewMACAddressNull()
-	}
-	return hwtypes.NewMACAddressValue(s)
-}
-
-func ipv4AddressOrNull(ip *netip.Addr) iptypes.IPv4Address {
-	if ip == nil || !ip.IsValid() || ip.IsUnspecified() {
-		return iptypes.NewIPv4AddressNull()
-	}
-	return iptypes.NewIPv4AddressValue(ip.String())
+	s := ip.String()
+	return &s
 }
 
 func boolPointer(b types.Bool) *bool {
@@ -248,5 +245,14 @@ func ipv4Pointer(ip iptypes.IPv4Address) *netip.Addr {
 	}
 
 	r, _ := ip.ValueIPv4Address()
+	return &r
+}
+
+func stringPointer(s types.String) *string {
+	if s.IsNull() || s.IsUnknown() {
+		return nil
+	}
+
+	r := s.ValueString()
 	return &r
 }
