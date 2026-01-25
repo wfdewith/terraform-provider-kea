@@ -96,7 +96,6 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 			"next_server": schema.StringAttribute{
 				Description: "Next server address for network booting (`siaddr` field in DHCP packet).",
 				Optional:    true,
-				Computed:    true,
 				CustomType:  iptypes.IPv4AddressType{},
 			},
 			"server_hostname": schema.StringAttribute{
@@ -106,7 +105,6 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 			"user_context": schema.StringAttribute{
 				Description: "Arbitrary JSON data stored with this reservation.",
 				Optional:    true,
-				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
 		},
