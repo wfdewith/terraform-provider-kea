@@ -3,6 +3,7 @@ package kea
 import (
 	"context"
 	"encoding/json"
+	"net/netip"
 )
 
 type DHCP4Client struct {
@@ -32,8 +33,8 @@ type Reservation struct {
 	BootFileName   string          `json:"boot-file-name,omitempty"`
 	ClientClasses  []string        `json:"client-classes,omitempty"`
 	Hostname       string          `json:"hostname,omitempty"`
-	IPAddress      string          `json:"ip-address,omitempty"`
-	NextServer     string          `json:"next-server,omitempty"`
+	IPAddress      *netip.Addr     `json:"ip-address,omitempty"`
+	NextServer     *netip.Addr     `json:"next-server,omitempty"`
 	OptionData     []OptionData    `json:"option-data,omitempty"`
 	ServerHostname string          `json:"server-hostname,omitempty"`
 	UserContext    json.RawMessage `json:"user-context,omitempty"`

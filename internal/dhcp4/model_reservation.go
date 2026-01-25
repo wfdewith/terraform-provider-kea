@@ -3,13 +3,13 @@ package dhcp4
 import (
 	"context"
 	"fmt"
+	"net/netip"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/hwtypes"
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/wfdewith/terraform-provider-kea/kea"
 )
 
@@ -52,10 +52,10 @@ func (m *ReservationModel) ToAPI(ctx context.Context) (kea.Reservation, diag.Dia
 		DUID:           m.DUID.ValueString(),
 		FlexID:         m.FlexID.ValueString(),
 		HWAddress:      m.HWAddress.ValueString(),
-		IPAddress:      m.IPAddress.ValueString(),
+		IPAddress:      ipv4Pointer(m.IPAddress),
 		BootFileName:   m.BootFileName.ValueString(),
 		Hostname:       m.Hostname.ValueString(),
-		NextServer:     m.NextServer.ValueString(),
+		NextServer:     ipv4Pointer(m.NextServer),
 		ServerHostname: m.ServerHostname.ValueString(),
 	}
 
@@ -224,18 +224,27 @@ func macAddressOrNull(s string) hwtypes.MACAddress {
 	return hwtypes.NewMACAddressValue(s)
 }
 
-func ipv4AddressOrNull(s string) iptypes.IPv4Address {
-	if s == "" {
+func ipv4AddressOrNull(ip *netip.Addr) iptypes.IPv4Address {
+	if ip == nil || !ip.IsValid() || ip.IsUnspecified() {
 		return iptypes.NewIPv4AddressNull()
 	}
-	return iptypes.NewIPv4AddressValue(s)
+	return iptypes.NewIPv4AddressValue(ip.String())
 }
 
-func boolPointer(b basetypes.BoolValue) *bool {
+func boolPointer(b types.Bool) *bool {
 	if b.IsNull() || b.IsUnknown() {
 		return nil
 	}
 
 	r := b.ValueBool()
+	return &r
+}
+
+func ipv4Pointer(ip iptypes.IPv4Address) *netip.Addr {
+	if ip.IsNull() || ip.IsUnknown() {
+		return nil
+	}
+
+	r, _ := ip.ValueIPv4Address()
 	return &r
 }
