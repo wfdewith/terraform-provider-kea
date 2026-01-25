@@ -27,7 +27,7 @@ type CommandResponse struct {
 	Arguments json.RawMessage `json:"arguments"`
 }
 
-func execWithResponse[T any](ctx context.Context, trans Transport, command string, arguments any) (*T, error) {
+func ExecWithResponse[T any](ctx context.Context, trans Transport, command string, arguments any) (*T, error) {
 	var result T
 
 	req, err := newCommand(command, arguments)
@@ -52,7 +52,7 @@ func execWithResponse[T any](ctx context.Context, trans Transport, command strin
 	return &result, nil
 }
 
-func exec(ctx context.Context, trans Transport, command string, arguments any) error {
+func Exec(ctx context.Context, trans Transport, command string, arguments any) error {
 	req, err := newCommand(command, arguments)
 	if err != nil {
 		return err

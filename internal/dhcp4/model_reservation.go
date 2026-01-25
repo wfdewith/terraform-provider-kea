@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/wfdewith/terraform-provider-kea/kea"
+	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
+	"github.com/wfdewith/terraform-provider-kea/kea/keaquery"
 )
 
 type ReservationModel struct {
@@ -42,10 +43,10 @@ type OptionDataModel struct {
 	ClientClasses types.Set    `tfsdk:"client_classes"`
 }
 
-func (m *ReservationModel) ToAPI(ctx context.Context) (kea.Reservation, diag.Diagnostics) {
+func (m *ReservationModel) ToAPI(ctx context.Context) (keadhcp4.Reservation, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	reservation := kea.Reservation{
+	reservation := keadhcp4.Reservation{
 		SubnetID:       uint32(m.SubnetID.ValueInt64()),
 		CircuitID:      m.CircuitID.ValueString(),
 		ClientID:       m.ClientID.ValueString(),
@@ -81,7 +82,7 @@ func (m *ReservationModel) ToAPI(ctx context.Context) (kea.Reservation, diag.Dia
 	return reservation, diags
 }
 
-func (m *ReservationModel) FromAPI(ctx context.Context, r *kea.Reservation) diag.Diagnostics {
+func (m *ReservationModel) FromAPI(ctx context.Context, r *keadhcp4.Reservation) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.SubnetID = types.Int64Value(int64(r.SubnetID))
@@ -129,15 +130,15 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *kea.Reservation) diag
 	return diags
 }
 
-func (m *ReservationModel) BuildQuery() kea.ReservationQuery {
+func (m *ReservationModel) BuildQuery() keaquery.ReservationQuery {
 	subnetID := uint32(m.SubnetID.ValueInt64())
 
 	identifierType, identifier := m.getIdentifier()
 	if identifierType != "" {
-		return kea.QueryReservationByIdentifier(subnetID, identifierType, identifier)
+		return keaquery.ReservationByIdentifier(subnetID, identifierType, identifier)
 	}
 
-	return kea.QueryReservationByIP(subnetID, m.IPAddress.ValueString())
+	return keaquery.ReservationByIP(subnetID, m.IPAddress.ValueString())
 }
 
 func (m *ReservationModel) ComputeID() string {
@@ -168,10 +169,10 @@ func (m *ReservationModel) getIdentifier() (identifierType, identifier string) {
 	}
 }
 
-func (o *OptionDataModel) ToAPI(ctx context.Context) (kea.OptionData, diag.Diagnostics) {
+func (o *OptionDataModel) ToAPI(ctx context.Context) (keadhcp4.OptionData, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	option := kea.OptionData{
+	option := keadhcp4.OptionData{
 		Name:       o.Name.ValueString(),
 		Code:       uint8(o.Code.ValueInt32()),
 		Space:      o.Space.ValueString(),
@@ -188,7 +189,7 @@ func (o *OptionDataModel) ToAPI(ctx context.Context) (kea.OptionData, diag.Diagn
 	return option, diags
 }
 
-func (o *OptionDataModel) FromAPI(ctx context.Context, od *kea.OptionData) diag.Diagnostics {
+func (o *OptionDataModel) FromAPI(ctx context.Context, od *keadhcp4.OptionData) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	o.Name = types.StringValue(od.Name)

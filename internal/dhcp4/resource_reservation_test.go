@@ -11,13 +11,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/wfdewith/terraform-provider-kea/internal/acctest"
 	"github.com/wfdewith/terraform-provider-kea/kea"
+	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
+	"github.com/wfdewith/terraform-provider-kea/kea/keaquery"
 )
 
 func TestAccReservation_basic(t *testing.T) {
 	mac := "02:a3:7b:4e:91:22"
 	ip := "10.67.0.42"
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -41,7 +43,7 @@ func TestAccReservation_withHostname(t *testing.T) {
 	ip := "10.67.0.142"
 	hostname := fmt.Sprintf("test-host-%d", rand.Intn(10000))
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -64,7 +66,7 @@ func TestAccReservation_withOptionData(t *testing.T) {
 	mac := "02:6b:d9:31:84:cf"
 	ip := "10.67.0.27"
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -87,7 +89,7 @@ func TestAccReservation_withOptionData(t *testing.T) {
 func TestAccReservation_destroy(t *testing.T) {
 	mac := "02:9a:3f:6c:d1:84"
 	ip := "10.67.0.201"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -112,7 +114,7 @@ func TestAccReservation_disappears(t *testing.T) {
 	mac := "02:1c:8e:a7:f2:3d"
 	ip := "10.67.0.177"
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -138,7 +140,7 @@ func TestAccReservation_global(t *testing.T) {
 	mac := "02:95:4a:62:b8:e1"
 	ip := "192.168.67.143"
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(0, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(0, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -164,7 +166,7 @@ func TestAccReservation_update(t *testing.T) {
 	hostname1 := fmt.Sprintf("test-host-%d", rand.Intn(10000))
 	hostname2 := fmt.Sprintf("test-host-%d", rand.Intn(10000))
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -192,7 +194,7 @@ func TestAccReservation_reorderSetsNoUpdate(t *testing.T) {
 	mac := "02:e7:2f:58:c3:9b"
 	ip := "10.67.0.165"
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -224,7 +226,7 @@ func TestAccReservation_withUserContext(t *testing.T) {
 	mac := "02:5a:b6:4d:e9:72"
 	ip := "10.67.0.64"
 	resourceName := "kea_dhcp4_reservation.test"
-	query := kea.QueryReservationByIdentifier(1, "hw-address", mac)
+	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -243,16 +245,16 @@ func TestAccReservation_withUserContext(t *testing.T) {
 	})
 }
 
-func testAccKeaClient() *kea.DHCP4Client {
+func testAccKeaClient() *keadhcp4.Client {
 	transport := &kea.HTTPTransport{
 		Endpoint: os.Getenv("KEA_DHCP4_ADDRESS"),
 		Username: os.Getenv("KEA_DHCP4_HTTP_USERNAME"),
 		Password: os.Getenv("KEA_DHCP4_HTTP_PASSWORD"),
 	}
-	return kea.NewDHCP4Client(transport)
+	return keadhcp4.NewClient(transport)
 }
 
-func testAccCheckReservationExists(t *testing.T, query kea.ReservationQuery) func() {
+func testAccCheckReservationExists(t *testing.T, query keaquery.ReservationQuery) func() {
 	return func() {
 		client := testAccKeaClient()
 
@@ -267,7 +269,7 @@ func testAccCheckReservationExists(t *testing.T, query kea.ReservationQuery) fun
 	}
 }
 
-func testAccCheckReservationDestroyed(t *testing.T, query kea.ReservationQuery) func() {
+func testAccCheckReservationDestroyed(t *testing.T, query keaquery.ReservationQuery) func() {
 	return func() {
 		client := testAccKeaClient()
 
@@ -282,7 +284,7 @@ func testAccCheckReservationDestroyed(t *testing.T, query kea.ReservationQuery) 
 	}
 }
 
-func testAccDeleteReservation(t *testing.T, query kea.ReservationQuery) func() {
+func testAccDeleteReservation(t *testing.T, query keaquery.ReservationQuery) func() {
 	return func() {
 		client := testAccKeaClient()
 		if err := client.DeleteReservation(context.Background(), query); err != nil {

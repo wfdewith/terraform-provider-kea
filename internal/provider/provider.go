@@ -16,6 +16,7 @@ import (
 	"github.com/wfdewith/terraform-provider-kea/internal/clients"
 	"github.com/wfdewith/terraform-provider-kea/internal/dhcp4"
 	"github.com/wfdewith/terraform-provider-kea/kea"
+	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
 )
 
 type KeaProvider struct {
@@ -119,7 +120,7 @@ func (p *KeaProvider) DataSources(_ context.Context) []func() datasource.DataSou
 	}
 }
 
-func configureDHCP4Client(data *KeaProviderClientModel) (*kea.DHCP4Client, error) {
+func configureDHCP4Client(data *KeaProviderClientModel) (*keadhcp4.Client, error) {
 	var address string
 	if data != nil && !data.Address.IsNull() && !data.Address.IsUnknown() {
 		address = data.Address.ValueString()
@@ -151,7 +152,7 @@ func configureDHCP4Client(data *KeaProviderClientModel) (*kea.DHCP4Client, error
 		return nil, err
 	}
 
-	client := kea.NewDHCP4Client(transport)
+	client := keadhcp4.NewClient(transport)
 	return client, nil
 }
 

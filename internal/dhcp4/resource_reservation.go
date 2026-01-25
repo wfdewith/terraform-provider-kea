@@ -18,14 +18,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/wfdewith/terraform-provider-kea/internal/clients"
 	"github.com/wfdewith/terraform-provider-kea/internal/errors"
-	"github.com/wfdewith/terraform-provider-kea/kea"
+	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
 )
 
 var _ resource.ResourceWithConfigure = (*ReservationResource)(nil)
 var _ resource.ResourceWithConfigValidators = (*ReservationResource)(nil)
 
 type ReservationResource struct {
-	client *kea.DHCP4Client
+	client *keadhcp4.Client
 }
 
 func (r *ReservationResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
