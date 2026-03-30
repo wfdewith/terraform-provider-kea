@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-nettypes/iptypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/wfdewith/terraform-provider-kea/internal/keatypes"
+	"github.com/wfdewith/terraform-provider-kea/kea"
 	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
 	"github.com/wfdewith/terraform-provider-kea/kea/keaquery"
 )
@@ -18,10 +20,10 @@ import (
 type ReservationModel struct {
 	ID             types.String         `tfsdk:"id"`
 	SubnetID       types.Int64          `tfsdk:"subnet_id"`
-	CircuitID      types.String         `tfsdk:"circuit_id"`
-	ClientID       types.String         `tfsdk:"client_id"`
-	DUID           types.String         `tfsdk:"duid"`
-	FlexID         types.String         `tfsdk:"flex_id"`
+	CircuitID      keatypes.HexID       `tfsdk:"circuit_id"`
+	ClientID       keatypes.HexID       `tfsdk:"client_id"`
+	DUID           keatypes.HexID       `tfsdk:"duid"`
+	FlexID         keatypes.HexID       `tfsdk:"flex_id"`
 	HWAddress      hwtypes.MACAddress   `tfsdk:"hw_address"`
 	IPAddress      iptypes.IPv4Address  `tfsdk:"ip_address"`
 	BootFileName   types.String         `tfsdk:"boot_file_name"`
@@ -49,11 +51,11 @@ func (m *ReservationModel) ToAPI(ctx context.Context) (keadhcp4.Reservation, dia
 
 	reservation := keadhcp4.Reservation{
 		SubnetID:       uint32(m.SubnetID.ValueInt64()),
-		CircuitID:      m.CircuitID.ValueStringPointer(),
-		ClientID:       m.ClientID.ValueStringPointer(),
-		DUID:           m.DUID.ValueStringPointer(),
-		FlexID:         m.FlexID.ValueStringPointer(),
-		HWAddress:      m.HWAddress.ValueStringPointer(),
+		CircuitID:      hexID(m.CircuitID),
+		ClientID:       hexID(m.ClientID),
+		DUID:           hexID(m.DUID),
+		FlexID:         hexID(m.FlexID),
+		HWAddress:      macAddrToHexID(m.HWAddress),
 		IPAddress:      ipv4Pointer(m.IPAddress),
 		BootFileName:   m.BootFileName.ValueStringPointer(),
 		Hostname:       m.Hostname.ValueStringPointer(),
@@ -88,11 +90,11 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *keadhcp4.Reservation)
 	var diags diag.Diagnostics
 
 	m.SubnetID = types.Int64Value(int64(r.SubnetID))
-	m.CircuitID = types.StringPointerValue(r.CircuitID)
-	m.ClientID = types.StringPointerValue(r.ClientID)
-	m.DUID = types.StringPointerValue(r.DUID)
-	m.FlexID = types.StringPointerValue(r.FlexID)
-	m.HWAddress = hwtypes.NewMACAddressPointerValue(r.HWAddress)
+	m.CircuitID = keatypes.NewHexIDPointerValue(hexIDToString(r.CircuitID))
+	m.ClientID = keatypes.NewHexIDPointerValue(hexIDToString(r.ClientID))
+	m.DUID = keatypes.NewHexIDPointerValue(hexIDToString(r.DUID))
+	m.FlexID = keatypes.NewHexIDPointerValue(hexIDToString(r.FlexID))
+	m.HWAddress = hwtypes.NewMACAddressPointerValue(hexIDToString(r.HWAddress))
 	m.IPAddress = iptypes.NewIPv4AddressPointerValue(addrPointerToString(r.IPAddress))
 	m.BootFileName = types.StringPointerValue(r.BootFileName)
 	m.Hostname = types.StringPointerValue(r.Hostname)
@@ -222,6 +224,14 @@ func (o *OptionDataModel) FromAPI(ctx context.Context, od *keadhcp4.OptionData) 
 	return diags
 }
 
+func hexIDToString(id kea.HexID) *string {
+	if len(id) == 0 {
+		return nil
+	}
+	s := id.String()
+	return &s
+}
+
 func addrPointerToString(ip *netip.Addr) *string {
 	if ip == nil {
 		return nil
@@ -237,6 +247,15 @@ func boolPointer(b types.Bool) *bool {
 
 	r := b.ValueBool()
 	return &r
+}
+
+func hexID(id keatypes.HexID) kea.HexID {
+	if id.IsNull() || id.IsUnknown() {
+		return nil
+	}
+
+	r, _ := id.ValueHexID()
+	return r
 }
 
 func ipv4Pointer(ip iptypes.IPv4Address) *netip.Addr {
@@ -255,4 +274,14 @@ func stringPointer(s types.String) *string {
 
 	r := s.ValueString()
 	return &r
+}
+
+func macAddrToHexID(addr hwtypes.MACAddress) kea.HexID {
+	if addr.IsNull() || addr.IsUnknown() {
+		return nil
+	}
+
+	a, _ := addr.ValueMACAddress()
+	id, _ := kea.ParseHexID(a.String())
+	return id
 }

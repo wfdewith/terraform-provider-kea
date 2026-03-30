@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/wfdewith/terraform-provider-kea/internal/clients"
 	"github.com/wfdewith/terraform-provider-kea/internal/errors"
+	"github.com/wfdewith/terraform-provider-kea/internal/keatypes"
 	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
 )
 
@@ -50,20 +51,24 @@ func (d *ReservationDataSource) Schema(ctx context.Context, req datasource.Schem
 			"circuit_id": schema.StringAttribute{
 				Description: "Circuit ID (Option 82 sub-option 1) to identify the client. Typically inserted by relay agents. " +
 					"Mutually exclusive with other identifier types.",
-				Optional: true,
+				Optional:   true,
+				CustomType: keatypes.HexIDType{},
 			},
 			"client_id": schema.StringAttribute{
 				Description: "Client identifier (Option 61) to identify the client. Mutually exclusive with other identifier types.",
 				Optional:    true,
+				CustomType:  keatypes.HexIDType{},
 			},
 			"duid": schema.StringAttribute{
 				Description: "DHCP Unique Identifier. Typically used in DHCPv6 but also supported for DHCPv4. " +
 					"Mutually exclusive with other identifier types.",
-				Optional: true,
+				Optional:   true,
+				CustomType: keatypes.HexIDType{},
 			},
 			"flex_id": schema.StringAttribute{
 				Description: "Flexible identifier from the `flex_id` hook library. Mutually exclusive with other identifier types.",
 				Optional:    true,
+				CustomType:  keatypes.HexIDType{},
 			},
 			"hw_address": schema.StringAttribute{
 				Description: "Hardware (MAC) address to identify the client. Mutually exclusive with other identifier types.",

@@ -16,7 +16,7 @@ import (
 )
 
 func TestAccReservation_basic(t *testing.T) {
-	mac := "02:a3:7b:4e:91:22"
+	mac := "02:A3:7B:4E:91:22"
 	ip := "10.67.0.42"
 	resourceName := "kea_dhcp4_reservation.test"
 	query := keaquery.ReservationByIdentifier(1, "hw-address", mac)
@@ -29,6 +29,98 @@ func TestAccReservation_basic(t *testing.T) {
 				Config: testAccReservationConfig_basic(1, mac, ip),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "hw_address", mac),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
+			},
+		},
+	})
+}
+
+func TestAccReservation_withClientID(t *testing.T) {
+	clientID := "01:aa:bb:cc"
+	ip := "10.67.0.74"
+	resourceName := "kea_dhcp4_reservation.test"
+	query := keaquery.ReservationByIdentifier(1, "client-id", clientID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationConfig_withClientID(1, clientID, ip),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "client_id", clientID),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
+			},
+		},
+	})
+}
+
+func TestAccReservation_withCircuitID(t *testing.T) {
+	circuitID := "01:02:03:04"
+	ip := "10.67.0.73"
+	resourceName := "kea_dhcp4_reservation.test"
+	query := keaquery.ReservationByIdentifier(1, "circuit-id", circuitID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationConfig_withCircuitID(1, circuitID, ip),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "circuit_id", circuitID),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
+			},
+		},
+	})
+}
+
+func TestAccReservation_withDUID(t *testing.T) {
+	duid := "00:03:00:01:de:ad:be:ef:ca:fe"
+	ip := "10.67.0.75"
+	resourceName := "kea_dhcp4_reservation.test"
+	query := keaquery.ReservationByIdentifier(1, "duid", duid)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationConfig_withDUID(1, duid, ip),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "duid", duid),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+				PostApplyFunc: testAccCheckReservationExists(t, query),
+			},
+		},
+	})
+}
+
+func TestAccReservation_withFlexID(t *testing.T) {
+	flexID := "01:02:03:04:05:06"
+	ip := "10.67.0.76"
+	resourceName := "kea_dhcp4_reservation.test"
+	query := keaquery.ReservationByIdentifier(1, "flex-id", flexID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationConfig_withFlexID(1, flexID, ip),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "flex_id", flexID),
 					resource.TestCheckResourceAttr(resourceName, "ip_address", ip),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 				),
@@ -303,6 +395,54 @@ resource "kea_dhcp4_reservation" "test" {
   ip_address = %q
 }
 `, acctest.ProviderConfig(), subnetID, mac, ip)
+}
+
+func testAccReservationConfig_withClientID(subnetID uint32, clientID, ip string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  client_id  = %q
+  ip_address = %q
+}
+`, acctest.ProviderConfig(), subnetID, clientID, ip)
+}
+
+func testAccReservationConfig_withCircuitID(subnetID uint32, circuitID, ip string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  circuit_id = %q
+  ip_address = %q
+}
+`, acctest.ProviderConfig(), subnetID, circuitID, ip)
+}
+
+func testAccReservationConfig_withDUID(subnetID uint32, duid, ip string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  duid       = %q
+  ip_address = %q
+}
+`, acctest.ProviderConfig(), subnetID, duid, ip)
+}
+
+func testAccReservationConfig_withFlexID(subnetID uint32, flexID, ip string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  flex_id    = %q
+  ip_address = %q
+}
+`, acctest.ProviderConfig(), subnetID, flexID, ip)
 }
 
 func testAccReservationConfig_withHostname(subnetID uint32, mac, ip, hostname string) string {

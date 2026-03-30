@@ -3,6 +3,8 @@ package keadhcp4
 import (
 	"encoding/json"
 	"net/netip"
+
+	"github.com/wfdewith/terraform-provider-kea/kea"
 )
 
 type Subnet struct {
@@ -15,11 +17,11 @@ type Subnet struct {
 type Reservation struct {
 	SubnetID uint32 `json:"subnet-id"`
 
-	CircuitID *string `json:"circuit-id,omitempty"`
-	ClientID  *string `json:"client-id,omitempty"`
-	DUID      *string `json:"duid,omitempty"`
-	FlexID    *string `json:"flex-id,omitempty"`
-	HWAddress *string `json:"hw-address,omitempty"`
+	CircuitID kea.HexID `json:"circuit-id,omitempty"`
+	ClientID  kea.HexID `json:"client-id,omitempty"`
+	DUID      kea.HexID `json:"duid,omitempty"`
+	FlexID    kea.HexID `json:"flex-id,omitempty"`
+	HWAddress kea.HexID `json:"hw-address,omitempty"`
 
 	BootFileName   *string          `json:"boot-file-name,omitempty"`
 	ClientClasses  []string         `json:"client-classes,omitempty"`
