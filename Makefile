@@ -6,6 +6,8 @@ KEA_DHCP4_ADDRESS ?= http://localhost:8000
 KEA_DHCP4_HTTP_USERNAME ?=
 KEA_DHCP4_HTTP_PASSWORD ?=
 
+GO_VERSION := 1.25.0
+
 default: build
 
 build:
@@ -86,7 +88,11 @@ static-analysis: lint fmtcheck
 
 update-gomod:
 	$(GO) get -t -v -u ./...
-	$(GO) mod tidy -go=1.25
+	$(GO) mod tidy -go=$(GO_VERSION)
+	$(GO) get toolchain@none
+	cd tools
+	$(GO) get -t -v -u ./...
+	$(GO) mod tidy -go=$(GO_VERSION)
 	$(GO) get toolchain@none
 	@echo "Dependencies updated"
 
