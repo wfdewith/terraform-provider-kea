@@ -180,6 +180,63 @@ func TestAccReservationDataSource_byIP(t *testing.T) {
 	})
 }
 
+func TestAccReservationDataSource_staticByHWAddress(t *testing.T) {
+	resourceName := "data.kea_dhcp4_reservation.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationDataSourceConfig_staticByHWAddress(1, acctest.StaticSubnetMAC),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "hw_address", acctest.StaticSubnetMAC),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", acctest.StaticSubnetIP),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccReservationDataSource_staticByIP(t *testing.T) {
+	resourceName := "data.kea_dhcp4_reservation.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationDataSourceConfig_staticByIP(1, acctest.StaticSubnetIP),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "hw_address", acctest.StaticSubnetMAC),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", acctest.StaticSubnetIP),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccReservationDataSource_staticGlobal(t *testing.T) {
+	resourceName := "data.kea_dhcp4_reservation.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccReservationDataSourceConfig_staticByHWAddress(0, acctest.StaticGlobalMAC),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "subnet_id", "0"),
+					resource.TestCheckResourceAttr(resourceName, "hw_address", acctest.StaticGlobalMAC),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", acctest.StaticGlobalIP),
+				),
+			},
+		},
+	})
+}
+
 func testAccReservationDataSourceConfig_basic(subnetID uint32, mac, ip string) string {
 	return fmt.Sprintf(`
 %s
@@ -316,4 +373,26 @@ data "kea_dhcp4_reservation" "test" {
   ip_address = kea_dhcp4_reservation.test.ip_address
 }
 `, acctest.ProviderConfig(), subnetID, mac, ip, hostname)
+}
+
+func testAccReservationDataSourceConfig_staticByHWAddress(subnetID uint32, mac string) string {
+	return fmt.Sprintf(`
+%s
+
+data "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  hw_address = %q
+}
+`, acctest.ProviderConfig(), subnetID, mac)
+}
+
+func testAccReservationDataSourceConfig_staticByIP(subnetID uint32, ip string) string {
+	return fmt.Sprintf(`
+%s
+
+data "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  ip_address = %q
+}
+`, acctest.ProviderConfig(), subnetID, ip)
 }

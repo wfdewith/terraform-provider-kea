@@ -7,12 +7,12 @@ import (
 	"github.com/wfdewith/terraform-provider-kea/kea/keaquery"
 )
 
-func (c *Client) GetReservations(ctx context.Context, subnetID uint32) ([]Reservation, error) {
+func (c *Client) GetReservations(ctx context.Context, target kea.OperationTarget, subnetID uint32) ([]Reservation, error) {
 	result, err := kea.ExecWithResponse[struct {
 		Hosts []Reservation `json:"hosts"`
-	}](ctx, c.transport, "reservation-get-all", struct {
+	}](ctx, c.transport, "reservation-get-all", kea.WithTarget(target, struct {
 		SubnetID uint32 `json:"subnet-id"`
-	}{SubnetID: subnetID})
+	}{subnetID}))
 
 	if err != nil {
 		return nil, err
@@ -25,26 +25,22 @@ func (c *Client) GetReservations(ctx context.Context, subnetID uint32) ([]Reserv
 	return result.Hosts, nil
 }
 
-func (c *Client) GetReservation(ctx context.Context, query keaquery.ReservationQuery) (*Reservation, error) {
-	return kea.ExecWithResponse[Reservation](ctx, c.transport, "reservation-get", query)
+func (c *Client) GetReservation(ctx context.Context, target kea.OperationTarget, query keaquery.ReservationQuery) (*Reservation, error) {
+	return kea.ExecWithResponse[Reservation](ctx, c.transport, "reservation-get", kea.WithTarget(target, query))
 }
 
-func (c *Client) AddReservation(ctx context.Context, reservation Reservation) error {
-	return kea.Exec(ctx, c.transport, "reservation-add", struct {
+func (c *Client) AddReservation(ctx context.Context, target kea.OperationTarget, reservation Reservation) error {
+	return kea.Exec(ctx, c.transport, "reservation-add", kea.WithTarget(target, struct {
 		Reservation Reservation `json:"reservation"`
-	}{
-		Reservation: reservation,
-	})
+	}{reservation}))
 }
 
-func (c *Client) UpdateReservation(ctx context.Context, reservation Reservation) error {
-	return kea.Exec(ctx, c.transport, "reservation-update", struct {
+func (c *Client) UpdateReservation(ctx context.Context, target kea.OperationTarget, reservation Reservation) error {
+	return kea.Exec(ctx, c.transport, "reservation-update", kea.WithTarget(target, struct {
 		Reservation Reservation `json:"reservation"`
-	}{
-		Reservation: reservation,
-	})
+	}{reservation}))
 }
 
-func (c *Client) DeleteReservation(ctx context.Context, query keaquery.ReservationQuery) error {
-	return kea.Exec(ctx, c.transport, "reservation-del", query)
+func (c *Client) DeleteReservation(ctx context.Context, target kea.OperationTarget, query keaquery.ReservationQuery) error {
+	return kea.Exec(ctx, c.transport, "reservation-del", kea.WithTarget(target, query))
 }

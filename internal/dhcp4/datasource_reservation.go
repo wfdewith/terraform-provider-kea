@@ -17,6 +17,7 @@ import (
 	"github.com/wfdewith/terraform-provider-kea/internal/clients"
 	"github.com/wfdewith/terraform-provider-kea/internal/errors"
 	"github.com/wfdewith/terraform-provider-kea/internal/keatypes"
+	"github.com/wfdewith/terraform-provider-kea/kea"
 	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
 )
 
@@ -192,7 +193,7 @@ func (d *ReservationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	reservation, err := d.client.GetReservation(ctx, data.BuildQuery())
+	reservation, err := d.client.GetReservation(ctx, kea.OperationTargetAll, data.BuildQuery())
 	if err != nil {
 		resp.Diagnostics.AddError("Error Reading Reservation", err.Error())
 		return
