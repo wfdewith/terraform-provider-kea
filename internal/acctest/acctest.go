@@ -33,3 +33,11 @@ func ProviderConfig() string {
 provider "kea" {}
 `
 }
+
+// Static reservations defined in testing/kea-dhcp4.conf
+const (
+	StaticSubnetMAC = "02:ac:10:00:00:01"
+	StaticSubnetIP  = "10.67.0.10"
+	StaticGlobalMAC = "02:ac:10:00:00:03"
+	StaticGlobalIP  = "192.168.67.10"
+)

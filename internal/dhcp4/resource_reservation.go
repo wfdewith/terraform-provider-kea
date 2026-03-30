@@ -19,6 +19,7 @@ import (
 	"github.com/wfdewith/terraform-provider-kea/internal/clients"
 	"github.com/wfdewith/terraform-provider-kea/internal/errors"
 	"github.com/wfdewith/terraform-provider-kea/internal/keatypes"
+	"github.com/wfdewith/terraform-provider-kea/kea"
 	"github.com/wfdewith/terraform-provider-kea/kea/keadhcp4"
 )
 
@@ -219,12 +220,12 @@ func (r *ReservationResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	if err := r.client.AddReservation(ctx, reservation); err != nil {
+	if err := r.client.AddReservation(ctx, kea.OperationTargetDatabase, reservation); err != nil {
 		resp.Diagnostics.AddError("Error Adding Reservation", err.Error())
 		return
 	}
 
-	created, err := r.client.GetReservation(ctx, data.BuildQuery())
+	created, err := r.client.GetReservation(ctx, kea.OperationTargetDatabase, data.BuildQuery())
 	if err != nil {
 		resp.Diagnostics.AddError("Error Reading Created Reservation", err.Error())
 		return
@@ -247,7 +248,7 @@ func (r *ReservationResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	reservation, err := r.client.GetReservation(ctx, data.BuildQuery())
+	reservation, err := r.client.GetReservation(ctx, kea.OperationTargetDatabase, data.BuildQuery())
 	if err != nil {
 		resp.Diagnostics.AddError("Error Reading Reservation", err.Error())
 		return
@@ -276,12 +277,12 @@ func (r *ReservationResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	if err := r.client.UpdateReservation(ctx, reservation); err != nil {
+	if err := r.client.UpdateReservation(ctx, kea.OperationTargetDatabase, reservation); err != nil {
 		resp.Diagnostics.AddError("Error Updating Reservation", err.Error())
 		return
 	}
 
-	updated, err := r.client.GetReservation(ctx, data.BuildQuery())
+	updated, err := r.client.GetReservation(ctx, kea.OperationTargetDatabase, data.BuildQuery())
 	if err != nil {
 		resp.Diagnostics.AddError("Error Reading Updated Reservation", err.Error())
 		return
@@ -304,7 +305,7 @@ func (r *ReservationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	if err := r.client.DeleteReservation(ctx, data.BuildQuery()); err != nil {
+	if err := r.client.DeleteReservation(ctx, kea.OperationTargetDatabase, data.BuildQuery()); err != nil {
 		resp.Diagnostics.AddError("Error Deleting Reservation", err.Error())
 	}
 }

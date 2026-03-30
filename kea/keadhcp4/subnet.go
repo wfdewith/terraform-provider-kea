@@ -6,10 +6,10 @@ import (
 	"github.com/wfdewith/terraform-provider-kea/kea"
 )
 
-func (c *Client) GetSubnets(ctx context.Context) ([]Subnet, error) {
+func (c *Client) GetSubnets(ctx context.Context, target kea.OperationTarget) ([]Subnet, error) {
 	result, err := kea.ExecWithResponse[struct {
 		Subnets []Subnet `json:"subnets"`
-	}](ctx, c.transport, "subnet4-list", nil)
+	}](ctx, c.transport, "subnet4-list", kea.WithTarget(target, struct{}{}))
 
 	if err != nil {
 		return nil, err

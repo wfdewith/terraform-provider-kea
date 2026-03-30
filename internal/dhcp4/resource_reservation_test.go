@@ -350,7 +350,7 @@ func testAccCheckReservationExists(t *testing.T, query keaquery.ReservationQuery
 	return func() {
 		client := testAccKeaClient()
 
-		reservation, err := client.GetReservation(context.Background(), query)
+		reservation, err := client.GetReservation(context.Background(), kea.OperationTargetDatabase, query)
 		if err != nil {
 			t.Fatalf("failed to get reservation: %v", err)
 		}
@@ -365,7 +365,7 @@ func testAccCheckReservationDestroyed(t *testing.T, query keaquery.ReservationQu
 	return func() {
 		client := testAccKeaClient()
 
-		reservation, err := client.GetReservation(context.Background(), query)
+		reservation, err := client.GetReservation(context.Background(), kea.OperationTargetDatabase, query)
 		if err != nil {
 			t.Fatalf("failed to check reservation: %v", err)
 		}
@@ -379,7 +379,7 @@ func testAccCheckReservationDestroyed(t *testing.T, query keaquery.ReservationQu
 func testAccDeleteReservation(t *testing.T, query keaquery.ReservationQuery) func() {
 	return func() {
 		client := testAccKeaClient()
-		if err := client.DeleteReservation(context.Background(), query); err != nil {
+		if err := client.DeleteReservation(context.Background(), kea.OperationTargetDatabase, query); err != nil {
 			t.Fatalf("failed to delete reservation: %v", err)
 		}
 	}
