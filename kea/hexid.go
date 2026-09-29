@@ -1,68 +1,37 @@
 package kea
 
 import (
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
 type HexID []byte
 
 func ParseHexID(id string) (HexID, error) {
-	if len(id) == 0 {
-		return nil, nil
+	b, err := ParseHex(id)
+	if err != nil {
+		return nil, err
 	}
-	if strings.Contains(id, ":") {
-		return parseWithSeparator(id, ":")
-	}
-	if strings.Contains(id, " ") {
-		return parseWithSeparator(id, " ")
-	}
-	if strings.HasPrefix(id, "0x") {
-		return parseWithPadding(id[2:])
-	}
-	return parseWithPadding(id)
-}
-
-func parseWithSeparator(s string, sep string) (HexID, error) {
-	parts := strings.Split(s, sep)
-	id := make(HexID, len(parts))
-	for i, part := range parts {
-		if len(part) == 1 {
-			part = "0" + part
-		} else if len(part) != 2 {
-			return nil, fmt.Errorf("invalid segment length: %q", part)
-		}
-
-		if _, err := hex.Decode(id[i:i+1], []byte(part)); err != nil {
-			return nil, err
-		}
-	}
-	return id, nil
-}
-
-func parseWithPadding(s string) (HexID, error) {
-	if len(s)%2 != 0 {
-		s = "0" + s
-	}
-	return hex.DecodeString(s)
+	return HexID(b), nil
 }
 
 func (h HexID) String() string {
-	n := len(h)
-	if n == 0 {
+	if len(h) == 0 {
 		return ""
 	}
 
-	buf := make([]byte, n*3-1)
-	for i := range n {
-		hex.Encode(buf[i*3:i*3+2], h[i:i+1])
-		if i < n-1 {
-			buf[i*3+2] = ':'
+	const hexDigits = "0123456789abcdef"
+	var sb strings.Builder
+	sb.Grow(len(h)*3 - 1)
+
+	for i, b := range h {
+		if i > 0 {
+			sb.WriteByte(':')
 		}
+		sb.WriteByte(hexDigits[b>>4])
+		sb.WriteByte(hexDigits[b&0x0f])
 	}
-	return string(buf)
+	return sb.String()
 }
 
 func (h HexID) MarshalJSON() ([]byte, error) {
