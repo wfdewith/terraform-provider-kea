@@ -6,7 +6,7 @@ KEA_DHCP4_ADDRESS ?= http://localhost:8000
 KEA_DHCP4_HTTP_USERNAME ?=
 KEA_DHCP4_HTTP_PASSWORD ?=
 
-GO_VERSION := 1.25.0
+GO_VERSION := 1.26.0
 
 default: build
 
