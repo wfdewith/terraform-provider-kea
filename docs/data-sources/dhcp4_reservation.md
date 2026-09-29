@@ -116,3 +116,4 @@ Read-Only:
 - `data` (String) Option value.
 - `name` (String) Option name.
 - `never_send` (Boolean) Whether this option is never sent to the client.
+- `space` (String) Option space.

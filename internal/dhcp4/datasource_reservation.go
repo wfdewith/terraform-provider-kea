@@ -125,6 +125,10 @@ func (d *ReservationDataSource) Schema(ctx context.Context, req datasource.Schem
 							Description: "Option code.",
 							Computed:    true,
 						},
+						"space": schema.StringAttribute{
+							Description: "Option space.",
+							Computed:    true,
+						},
 						"data": schema.StringAttribute{
 							Description: "Option value.",
 							Computed:    true,
