@@ -21,4 +21,4 @@ ip addr show dummy1
 ip addr show dummy2
 
 echo "Starting Kea DHCP4 server..."
-exec /usr/sbin/kea-dhcp4 -c /etc/kea/kea-dhcp4.conf
+exec /usr/sbin/kea-dhcp4 -X -c /etc/kea/kea-dhcp4.conf
