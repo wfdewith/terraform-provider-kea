@@ -185,6 +185,7 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 						},
 					},
 					Validators: []validator.Object{
+						optionPayloadValidator{},
 						objectvalidator.AtLeastOneOf(
 							path.MatchRoot("name"),
 							path.MatchRoot("code"),
