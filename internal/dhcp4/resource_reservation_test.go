@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -408,6 +409,313 @@ func TestAccReservation_reorderSetsNoUpdate(t *testing.T) {
 	})
 }
 
+func TestAccReservation_optionDataNormalization(t *testing.T) {
+	testCases := map[string]struct {
+		mac    string
+		ip     string
+		blocks []string
+	}{
+		"non_canonical_hex": {
+			mac: "02:11:22:33:88:01",
+			ip:  "10.67.0.220",
+			blocks: []string{`option_data {
+    name       = "domain-name-servers"
+    data       = "0a000001"
+    csv_format = false
+  }`},
+		},
+		"quoted_string": {
+			mac: "02:11:22:33:88:02",
+			ip:  "10.67.0.221",
+			blocks: []string{`option_data {
+    name       = "domain-name"
+    data       = "'example.com'"
+    csv_format = false
+  }`},
+		},
+		"duplicate_client_classes": {
+			mac: "02:11:22:33:88:03",
+			ip:  "10.67.0.222",
+			blocks: []string{`option_data {
+    name           = "domain-name-servers"
+    data           = "0a000001"
+    csv_format     = false
+    client_classes = ["a"]
+  }
+  option_data {
+    name           = "domain-name-servers"
+    data           = "0a:00:00:02"
+    csv_format     = false
+    client_classes = ["b"]
+  }`},
+		},
+		"undefined_code": {
+			mac: "02:11:22:33:88:04",
+			ip:  "10.67.0.223",
+			blocks: []string{`option_data {
+    code       = 224
+    data       = "'hello'"
+    csv_format = false
+  }
+  option_data {
+    code = 6
+    data = "10.0.0.1"
+  }`},
+		},
+		"unresolved_undefined_code": {
+			mac: "02:11:22:33:88:09",
+			ip:  "10.67.0.228",
+			blocks: []string{
+				`option_data {
+    code = 224
+    data = "'hello'"
+  }
+  option_data {
+    name = "domain-name-servers"
+    data = "10.0.0.1, 10.0.0.2"
+  }`,
+				`option_data {
+    code = 224
+    data = "68:65:6c:6c:6f"
+  }
+  option_data {
+    name = "domain-name-servers"
+    data = "10.0.0.1, 10.0.0.2"
+  }`,
+			},
+		},
+		"mix_and_update": {
+			mac: "02:11:22:33:88:08",
+			ip:  "10.67.0.227",
+			blocks: []string{
+				`option_data {
+    name       = "domain-name-servers"
+    data       = "0a000001"
+    csv_format = false
+  }`,
+				`option_data {
+    name = "domain-name-servers"
+    data = "10.0.0.1"
+  }`,
+				`option_data {
+    name       = "domain-name-servers"
+    data       = "0a 00 00 03"
+    csv_format = false
+  }`,
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { acctest.PreCheck(t) },
+				ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+				Steps:                    optionDataSteps(1, tc.mac, tc.ip, tc.blocks...),
+			})
+		})
+	}
+}
+
+func TestAccReservation_optionDataSameBytes(t *testing.T) {
+	testCases := map[string]struct {
+		mac    string
+		ip     string
+		blocks string
+	}{
+		"two": {
+			mac: "02:11:22:33:88:05",
+			ip:  "10.67.0.224",
+			blocks: `option_data {
+    name       = "domain-name-servers"
+    data       = "0a000001"
+    csv_format = false
+  }
+  option_data {
+    name       = "routers"
+    data       = "0A:00:00:01"
+    csv_format = false
+  }`,
+		},
+		"three": {
+			mac: "02:11:22:33:88:06",
+			ip:  "10.67.0.225",
+			blocks: `option_data {
+    name       = "domain-name-servers"
+    data       = "0a 00 00 01"
+    csv_format = false
+  }
+  option_data {
+    name       = "routers"
+    data       = "0a000001"
+    csv_format = false
+  }
+  option_data {
+    name       = "time-servers"
+    data       = "0x0A000001"
+    csv_format = false
+  }`,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { acctest.PreCheck(t) },
+				ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+				Steps:                    optionDataSteps(1, tc.mac, tc.ip, tc.blocks),
+			})
+		})
+	}
+}
+
+func TestAccReservation_optionDataSameBytesMany(t *testing.T) {
+	names := []string{"domain-name-servers", "routers", "time-servers", "name-servers", "log-servers", "cookie-servers", "lpr-servers", "impress-servers"}
+	spellings := []string{"0a000001", "0A:00:00:01", "0x0a000001", "0a 00 00 01", "a000001", "0A000001", "0a:0:0:1", "0xA000001"}
+	macs := []string{"02:11:22:33:88:11", "02:11:22:33:88:12", "02:11:22:33:88:13", "02:11:22:33:88:14"}
+	ips := []string{"10.67.0.236", "10.67.0.237", "10.67.0.238", "10.67.0.239"}
+
+	for rot := 0; rot < 4; rot++ {
+		var blocks string
+		for i, n := range names {
+			blocks += fmt.Sprintf("  option_data {\n    name       = %q\n    data       = %q\n    csv_format = false\n  }\n", n, spellings[(i+rot*3)%len(spellings)])
+		}
+
+		t.Run(fmt.Sprint(rot), func(t *testing.T) {
+			resource.Test(t, resource.TestCase{
+				PreCheck:                 func() { acctest.PreCheck(t) },
+				ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+				Steps:                    optionDataSteps(1, macs[rot], ips[rot], blocks),
+			})
+		})
+	}
+}
+
+func TestAccReservation_optionDataRespell(t *testing.T) {
+	mac := "02:11:22:33:88:0a"
+	ip := "10.67.0.229"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    name       = "domain-name-servers"
+    data       = "0a000001"
+    csv_format = false
+  }
+  option_data {
+    name       = "routers"
+    data       = "0a000001"
+    csv_format = false
+  }`)},
+			{
+				Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    name       = "domain-name-servers"
+    data       = "0A:00:00:01"
+    csv_format = false
+  }
+  option_data {
+    name       = "routers"
+    data       = "0x0a000001"
+    csv_format = false
+  }`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectNonEmptyPlan()},
+				},
+			},
+			{
+				Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    name       = "domain-name-servers"
+    data       = "0A:00:00:01"
+    csv_format = false
+    always_send = true
+  }
+  option_data {
+    name       = "routers"
+    data       = "0x0a000001"
+    csv_format = false
+  }`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectNonEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
+func TestAccReservation_optionDataUnresolvedRespell(t *testing.T) {
+	mac := "02:11:22:33:88:0b"
+	ip := "10.67.0.230"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    code = 224
+    data = "'hello'"
+  }`)},
+			{
+				Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    code = 224
+    data = "68656C6C6F"
+  }`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectNonEmptyPlan()},
+				},
+			},
+			{
+				Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    code       = 224
+    data       = "68656C6C6F"
+    csv_format = false
+  }`),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
+func TestAccReservation_optionDataInvalidAtPlan(t *testing.T) {
+	mac := "02:11:22:33:88:0c"
+	ip := "10.67.0.231"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{{
+			Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    name       = "domain-name-servers"
+    data       = "zz"
+    csv_format = false
+  }`),
+			PlanOnly:    true,
+			ExpectError: regexp.MustCompile("Invalid Option Data"),
+		}},
+	})
+}
+
+func TestAccReservation_optionDataCSVForUndefinedFails(t *testing.T) {
+	mac := "02:11:22:33:88:0d"
+	ip := "10.67.0.232"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		Steps: []resource.TestStep{{
+			Config: testAccReservationConfig_withOptionDataBlocks(1, mac, ip, `option_data {
+    code       = 224
+    data       = "hello"
+    csv_format = true
+  }`),
+			ExpectError: regexp.MustCompile("Error Adding Reservation"),
+		}},
+	})
+}
+
 func testAccKeaClient() *keadhcp4.Client {
 	transport := &kea.HTTPTransport{
 		Endpoint: os.Getenv("KEA_DHCP4_ADDRESS"),
@@ -552,6 +860,39 @@ resource "kea_dhcp4_reservation" "test" {
   }
 }
 `, acctest.ProviderConfig(), subnetID, mac, ip)
+}
+
+func testAccReservationConfig_withOptionDataBlocks(subnetID uint32, mac, ip, blocks string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "kea_dhcp4_reservation" "test" {
+  subnet_id  = %d
+  hw_address = %q
+  ip_address = %q
+
+%s
+}
+`, acctest.ProviderConfig(), subnetID, mac, ip, blocks)
+}
+
+// optionDataSteps applies each config, then re-applies it and asserts an empty
+// plan, guarding against option data representation churn.
+func optionDataSteps(subnetID uint32, mac, ip string, blocks ...string) []resource.TestStep {
+	var steps []resource.TestStep
+	for _, b := range blocks {
+		cfg := testAccReservationConfig_withOptionDataBlocks(subnetID, mac, ip, b)
+		steps = append(steps,
+			resource.TestStep{Config: cfg},
+			resource.TestStep{
+				Config: cfg,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		)
+	}
+	return steps
 }
 
 func testAccReservationConfig_global(mac, ip string) string {

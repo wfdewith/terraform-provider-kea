@@ -110,10 +110,20 @@ func (m *ReservationModel) FromAPI(ctx context.Context, r *keadhcp4.Reservation)
 	}
 
 	if len(r.OptionData) > 0 {
+		var prior []OptionDataModel
+		if !m.OptionData.IsNull() && !m.OptionData.IsUnknown() {
+			diags.Append(m.OptionData.ElementsAs(ctx, &prior, false)...)
+		}
+		modelIndex, d := matchOptions(ctx, prior, r.OptionData)
+		diags.Append(d...)
+
 		var optionDataModels []OptionDataModel
-		for _, od := range r.OptionData {
+		for i, od := range r.OptionData {
 			var odModel OptionDataModel
 			diags.Append(odModel.FromAPI(ctx, &od)...)
+			if j := modelIndex[i]; j >= 0 {
+				odModel.Data = prior[j].Data
+			}
 			optionDataModels = append(optionDataModels, odModel)
 		}
 		optionDataSet, d := types.SetValueFrom(ctx, m.OptionData.ElementType(ctx), optionDataModels)
@@ -180,8 +190,6 @@ func (o *OptionDataModel) ToAPI(ctx context.Context) (keadhcp4.OptionData, diag.
 	option := keadhcp4.OptionData{
 		Name:       stringPointer(o.Name),
 		Space:      stringPointer(o.Space),
-		Data:       stringPointer(o.Data),
-		CSVFormat:  boolPointer(o.CSVFormat),
 		AlwaysSend: boolPointer(o.AlwaysSend),
 		NeverSend:  boolPointer(o.NeverSend),
 	}
@@ -190,6 +198,12 @@ func (o *OptionDataModel) ToAPI(ctx context.Context) (keadhcp4.OptionData, diag.
 		code := uint8(o.Code.ValueInt32())
 		option.Code = &code
 	}
+
+	payload, err := parseOptionPayload(o.Data, o.CSVFormat)
+	if err != nil {
+		diags.AddError("Invalid Option Data", err.Error())
+	}
+	option.Payload = payload
 
 	if !o.ClientClasses.IsNull() && !o.ClientClasses.IsUnknown() {
 		diags.Append(o.ClientClasses.ElementsAs(ctx, &option.ClientClasses, false)...)
@@ -208,8 +222,13 @@ func (o *OptionDataModel) FromAPI(ctx context.Context, od *keadhcp4.OptionData) 
 		o.Code = types.Int32Null()
 	}
 	o.Space = types.StringPointerValue(od.Space)
-	o.Data = types.StringPointerValue(od.Data)
-	o.CSVFormat = types.BoolPointerValue(od.CSVFormat)
+	o.Data, o.CSVFormat = types.StringNull(), types.BoolNull()
+	switch p := od.Payload.(type) {
+	case kea.CSVPayload:
+		o.Data, o.CSVFormat = types.StringValue(string(p)), types.BoolValue(true)
+	case kea.BinaryPayload:
+		o.Data, o.CSVFormat = types.StringValue(p.String()), types.BoolValue(false)
+	}
 	o.AlwaysSend = types.BoolPointerValue(od.AlwaysSend)
 	o.NeverSend = types.BoolPointerValue(od.NeverSend)
 
@@ -284,4 +303,11 @@ func macAddrToHexID(addr hwtypes.MACAddress) kea.HexID {
 	a, _ := addr.ValueMACAddress()
 	id, _ := kea.ParseHexID(a.String())
 	return id
+}
+
+func parseOptionPayload(data types.String, csvFormat types.Bool) (kea.OptionPayload, error) {
+	if data.IsNull() || data.IsUnknown() {
+		return nil, nil
+	}
+	return kea.NewOptionPayload(data.ValueString(), kea.CSVFormatOf(boolPointer(csvFormat)))
 }
