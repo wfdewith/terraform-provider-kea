@@ -14,6 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/wfdewith/terraform-provider-kea/internal/clients"
@@ -50,6 +53,9 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 				Validators: []validator.Int64{
 					int64validator.Between(0, math.MaxUint32),
 				},
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 
 			"circuit_id": schema.StringAttribute{
@@ -57,27 +63,42 @@ func (r *ReservationResource) Schema(ctx context.Context, req resource.SchemaReq
 					"Mutually exclusive with other identifier types.",
 				Optional:   true,
 				CustomType: keatypes.HexIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"client_id": schema.StringAttribute{
 				Description: "Client identifier (Option 61) to identify the client. Mutually exclusive with other identifier types.",
 				Optional:    true,
 				CustomType:  keatypes.HexIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"duid": schema.StringAttribute{
 				Description: "DHCP Unique Identifier. Typically used in DHCPv6 but also supported for DHCPv4. " +
 					"Mutually exclusive with other identifier types.",
 				Optional:   true,
 				CustomType: keatypes.HexIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"flex_id": schema.StringAttribute{
 				Description: "Flexible identifier from the `flex_id` hook library. Mutually exclusive with other identifier types.",
 				Optional:    true,
 				CustomType:  keatypes.HexIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 			"hw_address": schema.StringAttribute{
 				Description: "Hardware (MAC) address to identify the client. Mutually exclusive with other identifier types.",
 				Optional:    true,
 				CustomType:  hwtypes.MACAddressType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 			},
 
 			"ip_address": schema.StringAttribute{
